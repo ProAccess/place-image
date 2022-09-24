@@ -42,10 +42,9 @@ Note, global parameters must be separated *with* commas within the global YAML M
 
 Global parameter(s) apply to *all* images or any parameter not otherwise specified in a specific image statement. For example, you may wish to include a standard label for all images, such as  "My Figure 1: " to precede each image caption. You can accomplish this with the following in your YAML header:
 
-```
----
+<pre><code>---
 title: "Plan for Controlling Weather"
-imageplacement: fig_cap_label="My Figure", fig_cap_label_sep=":_" 
+<span style="color:blue">imageplacement: fig_cap_label="My Figure", fig_cap_label_sep=":_"</span>
 output:
   html_document:
     pandoc_args: ["--lua-filter=place-image.lua"]
@@ -54,7 +53,7 @@ output:
 params:
   author: Your Name
 ---
-```
+</code></pre>
 
 This will cause every image to be preceded by the label "My Figure" followed by a space and sequence number particular to the label. The parameter line
 
@@ -126,14 +125,13 @@ This filter can be invoked on the command line with the "--lua-filter" option, e
 
 Alternatively, if you are working within an environment like R-Studio that runs Pandoc, it may be included in the YAML header, for example,
 
-```
----
+<pre><code>---
 title: \"My extraordinarily beautiful document\" 
 output:
   html_document:
-    pandoc_args: [\"--lua-filter=place-image.lua\"]
+<span style="color:blue">    pandoc_args: [\"--lua-filter=place-image.lua\"]</span>
 ---
-```
+</code></pre>
 
 # Special considerations for latex/pdf documents
 
