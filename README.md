@@ -2,11 +2,28 @@
 
 The *image-placement.lua* Pandoc filter is intended to address some commonly encountered shortcomings when displaying images in documents created by Pandoc from markdown documents.
 
-Till now, workarounds included using html notation and modifications to templates. This filter allows more elegant solutions by allowing use of built-in functionality of pandoc to read attributes entered with the image statement within brackets { }.
+![Here are two examples of how a markdown image statement can specify image parameters](./images-md/examples.png){width=100%}
 
-This filter lets you specify display of images in two ways.
+This filter allows you to specify parameters such as...
 
-#### For each specific image
+- "width" -- Image width
+
+- "position" -- horizontal position on page (left, center, right)
+- "h_padding", "v_padding" -- padding between image, caption and surrounding text.
+- "cap_width" -- Width of caption text. If expressed as percent, will be relative to image width.
+- "cap_position" -- above or below. Default is above.
+- "cap_h_position" -- horizontal position of caption block relative to image (left, center, right). Default is center.
+- "cap_text_align" -- If specified: left, center, right
+- "cap_text_size" -- If specified: small, normal, large. Default is normal.
+- "cap_text_font" -- If specified, font must be among system fonts.
+- "cap_text_style" -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
+- "cap_label" -- If specified, can be any, e.g., "Figure", "Photo", "My Fantatic Table", etc.
+- "cap_label_style" -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
+- "cap_label_sep" -- If specified, indicates separater between caption label number and caption, e.g., ":&nbsp;"
+
+This filter lets you specify display of images in two ways: (1) for each image and (2) for all images, globally.
+
+### You can specify params for each specific image
 
 Each markdown image statement can include desired parameters, e.g.,
 
@@ -14,7 +31,7 @@ Each markdown image statement can include desired parameters, e.g.,
 
 A parameter for a specific image will override any global parameter.
 
-#### Globally, for *all* images
+### ... or globally, for *all* images
 
 You can affect all images within a global "[imageplacement](#global_params)" statement in the YAML Meta section at the top of the markdown document, e.g.,
 
@@ -30,17 +47,13 @@ The following illustrates how to easily size a specific image to 45% of page wid
 
 These and other available parameters are [listed below](#commands_table).
 
-### Examples
-
-![Here are two examples of how a markdown image statement can specify image parameters](./images-md/examples.png){width=100%}
-
 ## Global parameters applying to *all* doc images{#global_params}
 
 Note, global parameters must be separated *with* commas within the global YAML Meta imageplacement statement at the top of the markdown document, for example,
 
 `imageplacement: fig_cap_label="Figure", fig_cap_label_sep=":_"`
 
-Global parameter(s) apply to *all* images or any parameter not otherwise specified in a specific image statement. For example, you may wish to include a standard label for all images, such as  "My Figure 1: " to precede each image caption. You can accomplish this with the following in your YAML header:
+Global parameter(s) apply to *all* images or any parameter not otherwise specified in a specific image statement. For example, you may wish to include a standard label for all images, such as  "My Figure 1: " to precede each image caption. You can accomplish this with this 'imageplacement' statement in your YAML header:
 
 <pre><code>---
 title: "Plan for Controlling Weather"
