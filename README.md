@@ -1,6 +1,6 @@
 # A solution for enhanced image control
 
-The *image-placement.lua* Pandoc filter is intended to address some commonly encountered shortcomings when displaying images in documents created by Pandoc from markdown documents. Now you can specify a variety of image parameters directly within markdown images statements. Here are just two brief examples:
+The *image-placement.lua* Pandoc filter is intended to address some commonly encountered shortcomings when displaying images in documents created by Pandoc from markdown documents. Now you can specify a variety of image parameters directly within markdown images statements. Here are two brief examples:
 
 ![](./images-md/examples.png)
 
