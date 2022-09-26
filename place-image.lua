@@ -709,7 +709,7 @@ function Image(img)
         if i ~= nil then
             err_msg = err_msg .. "GIF images (like " .. src ..
                           ") cannot be used when creating Latex or PDF files. Please substitute a '.png, '.jpg', or other graphic file.\n"
-            src = "./templates/Cannot use GIF for pdf.png"
+            src = "./images-md/Cannot use GIF for pdf.png"
         end
         wd = getParam("width")
         i, j = string.find(wd, "%%") -- If width expressed as percentage, use that value
