@@ -78,7 +78,7 @@ You can cause the label to be bold face by adding the "cap_label_style" paramete
 
 `imageplacement: fig_cap_label="My Figure", fig_cap_label_sep=":_", cap_label_style=bold`
 
-This would produce a caption like this: "**My Figure 3:** This is my caption..."\ 
+This would produce a caption like this: "**My Figure 3:** This is my caption..."
 
 > Note 1 — unlike with parameters listed with images, image parameters in the YAML header must be separated by commas, due to the way the Lua language scans the YAML header for parameters; failing to include commas may cause Pandoc to pee on itself, causing a "scan" error and high blood pressure.
 
