@@ -25,9 +25,9 @@ This filter lets you specify display of images in two ways: (1) for each image a
 
 ### You can specify params for each specific image
 
-Each markdown image statement can include desired parameters, e.g.,
+Each markdown image statement can include desired parameters. For example, you can specify an image width, its caption label and caption position like this:
 
-`!\[My caption](my-image.jpg){width=2.5in fig_cap_label="My Figure"}`
+`!\[My caption](my-image.jpg){width=2.5in fig_cap_label="My Figure" cap_position=above}`
 
 A parameter for a specific image will override any global parameter.
 
@@ -35,7 +35,7 @@ A parameter for a specific image will override any global parameter.
 
 You can affect all images within a global "[imageplacement](#global_params)" statement in the YAML Meta section at the top of the markdown document, e.g.,
 
-`imageplacement: width=2.5in, fig_cap_label="My Figure"`
+`imageplacement: width=2.5in, fig_cap_label="My Figure", fig_position=above`
 
 ## Parameters for a specific image
   
