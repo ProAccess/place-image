@@ -48,7 +48,7 @@ The following illustrates how to easily size a specific image to 45% of page wid
 
 These and other available parameters are [listed below][#commands_table].
 
-## Global parameters applying to *all* doc images [#global_params]
+## Global parameters applying to *all* doc images <a name="global_params"></a>
 
 Note, global parameters must be separated *with* commas within the global YAML Meta imageplacement statement at the top of the markdown document, for example,
 
