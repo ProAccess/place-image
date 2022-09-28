@@ -17,9 +17,10 @@ This filter allows you to specify parameters such as...
 - "cap_text_size" -- If specified: small, normal, large. Default is normal.
 - "cap_text_font" -- If specified, font must be among system fonts.
 - "cap_text_style" -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
-- "cap_label" -- If specified, can be any, e.g., "Figure", "Photo", "My Fantatic Table", etc.
+- "cap_label" -- If specified, can be any, e.g., "Figure", "Photo", "My Fantastic Table", etc. Number following label will be respective to the label.
 - "cap_label_style" -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
 - "cap_label_sep" -- If specified, indicates separater between caption label number and caption, e.g., ":&nbsp;"
+- "pdf_adjust_lines" -- Used to compensate for inaccurate wraps in Pandoc conversions to pdf and latex formats. 
 
 This filter lets you specify display of images in two ways: (1) for each image and (2) for all images, globally.
 
@@ -45,9 +46,9 @@ The following illustrates how to easily size a specific image to 45% of page wid
 
 `![My caption](my-image.jpg){width=45% position=float-right cap_position=below}`
 
-These and other available parameters are [listed below](#commands_table).
+These and other available parameters are [listed below][#commands_table].
 
-## Global parameters applying to *all* doc images{#global_params}
+## Global parameters applying to *all* doc images[#global_params]
 
 Note, global parameters must be separated *with* commas within the global YAML Meta imageplacement statement at the top of the markdown document, for example,
 
