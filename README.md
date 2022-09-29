@@ -1,3 +1,16 @@
+---
+title: place-image pandoc lua filter adds image flexibility
+output:
+  html_document:
+    css: "css-md/mdstyles.css"
+    self_contained: no
+  latex_document:
+    template: "./templates/eisvogel.latex"
+  pdf_document:
+    template: "./templates/eisvogel.latex"
+  word_document:
+    reference_docx: "./templates/reference_template.docx"
+---
 # A solution for enhanced image control
 
 The *image-placement.lua* Pandoc filter is intended to address some commonly encountered shortcomings when displaying images in documents created by Pandoc from markdown documents. Now you can specify a variety of image parameters directly within markdown images statements. Here are two brief examples:
@@ -46,9 +59,11 @@ The following illustrates how to easily size a specific image to 45% of page wid
 
 `![My caption](my-image.jpg){width=45% position=float-right cap_position=below}`
 
-These and other available parameters are [listed below][#commands_table].
+These and other available parameters are [listed below](#commands_table).
 
-## Global parameters applying to *all* doc images <a name="global_params"></a>
+<a name="global_params"></a>
+
+## Global parameters applying to *all* doc images
 
 Note, global parameters must be separated *with* commas within the global YAML Meta imageplacement statement at the top of the markdown document, for example,
 
