@@ -1,16 +1,16 @@
 ---
 title: place-image pandoc lua filter adds image flexibility
 output:
+  word_document:
+    reference_docx: "./templates/reference_template.docx"
+  latex_document:
+    template: "./templates/eisvogel.latex"
+  pdf_document:
+    template: "./templates/eisvogel.latex"
   html_document:
     css: "css-md/mdstyles.css"
     self_contained: no
     template: "./templates/default.html5"
-  latex_document:
-    template: "./templates/eisvogel.latex"
-  word_document:
-    reference_docx: "./templates/reference_template.docx"
-  pdf_document:
-    template: "./templates/eisvogel.latex"
 ---
 # A solution for enhanced image control
 
@@ -63,7 +63,7 @@ These and other available parameters are [listed below](#commands-table).
 
 <a name="global-params"></a>
 
-## Global parameters applying to *all* doc images
+## Global parameters applying to *all* doc images{#global-params}
 
 Note, global parameters must be separated *with* commas within the global YAML Meta imageplacement statement at the top of the markdown document, for example,
 
@@ -109,6 +109,8 @@ Currently this filter supports Pandoc converson of markdown documents to
 - pdf — The '[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)' package is required for text-wrap. See [Using wrapfig](#using-wrapfig), below.
 - latex — The '[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)' package is required for text-wrap. See [Using wrapfig](#using-wrapfig), below.
 - epub
+
+<a name="commands-table"></a>
 
 # What this filter allows you to do{#commands-table}
 
