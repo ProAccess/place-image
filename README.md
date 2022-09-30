@@ -63,7 +63,7 @@ These and other available parameters are [listed below](#commands-table).
 
 <a name="global-params"></a>
 
-## Global parameters applying to *all* doc images{#global-params}
+## Global parameters applying to *all* doc images<span style="color:blue">{#global-params}</span>
 
 Note, global parameters must be separated *with* commas within the global YAML Meta imageplacement statement at the top of the markdown document, for example,
 
