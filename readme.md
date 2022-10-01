@@ -62,7 +62,7 @@ Each markdown image statement can include desired parameters. For
 example, you can specify an image width, its caption label and caption
 position like this:
 
-`!\[My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above}`
+`![My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above}`
 
 A parameter for a specific image will override any global parameter.
 
@@ -73,6 +73,24 @@ You can affect all images within a global
 the top of the markdown document, e.g.,
 
 `imageplacement: width=2.5in, cap_label="My Figure", cap_position=above`
+
+### You can even specify different params for different document types
+
+You can preface any parameter with a document format identifier and that
+parameter will override any default or other image parameter for that
+document type. For example, the following will set the image width at
+50% of page width for any supported format except pdf and docx images,
+which will be sized separately:
+
+`![My caption](my-image.jpg){position=float-right width=50% pdf:width=40% docx:width=45%}]`
+
+Supported document format identifiers include the following:
+
+-   html:
+-   docx:
+-   pdf:
+-   latex:
+-   epub:
 
 ## Parameters for a specific image
 
@@ -107,9 +125,10 @@ include a standard label for all images, such as “My Figure 1:” to
 precede each image caption. You can accomplish this with this
 ‘imageplacement’ statement in your YAML header:
 
-<pre><code>---
+<pre><code>
+---
 title: "Plan for Controlling Weather"
-<span style="color:blue">imageplacement: cap_label="My Figure", cap_label_sep=":_"</span>
+<span style="color:#45c">imageplacement: cap_label="My Figure", cap_label_sep=":_"</span>
 output:
   html_document:
     pandoc_args: ["--lua-filter=place-image.lua"]
@@ -219,7 +238,7 @@ that runs Pandoc, it may be included in the YAML header, for example,
 title: \"My extraordinarily beautiful document\" 
 output:
   html_document:
-<span style="color:blue">    pandoc_args: [\"--lua-filter=place-image.lua\"]</span>
+<span style="color:#45c">    pandoc_args: [\"--lua-filter=place-image.lua\"]</span>
 ---
 </code></pre>
 
@@ -234,9 +253,9 @@ on this site.)
 
 `\usepackage{layouts} % allows calculating width relative to latex/pdf page width \usepackage{wrapfig} % enables text wrap-around of figures \usepackage[export]{adjustbox}  % must include to enable additional positioning`
 
-Again, these package statements already are in following two template
-versions included on this site, either of which you can use for Pandoc
-conversion into latex/pdf documents:
+Again, these package statements already are in the following two
+template versions included on this site, either of which you can use for
+Pandoc conversion into latex/pdf documents:
 
 -   default.latex — The default latex template by Pandoc author John
     MacFarlane, to which I added those statements.
@@ -244,10 +263,12 @@ conversion into latex/pdf documents:
     template by Pandoc author John MacFarlane. This is the latex
     template I prefer for its expanded capabilities.
 
+<a name="using-wrapfig"></a>
+
 ## Image wrapping in latex/pdf documents
 
 Image wrapping for floating images in these formats is handled by Donald
-Arseneau’s neat ‘wrapfig’ package{#using-wrapfig}.
+Arseneau’s neat ‘wrapfig’ package.
 
 ### Repairing defective text-wraps
 
@@ -262,28 +283,6 @@ that image, e.g., “10”, “15”, etc., until you are satisfied. Here are a
 few examples of using the ‘pdf_adjust_lines’ parameter:
 
 `pdf_adjust_lines=10 pdf_adjust_lines=12 pdf_adjust_lines=15, etc.`
-
-# Different parameters for different document formats
-
-This filter allows you to specify different image parameters, depending
-upon document format. For example, you may wish images in your Word
-.docx files to be slightly smaller than those in your .html documents.
-You can preface any parameter with its format identifier and that
-parameter will override any default or other image parameter.
-
-For example, the following will cause the image width to appear at 50%
-of page width for any supported format except .docx images, which will
-be sized to 45%:
-
-`![My caption](my-image.jpg){position=float-right width=50% docx:width=45%}]`
-
-Supported document format identifiers include the following:
-
--   html:
--   docx:
--   pdf:
--   latex:
--   epub:
 
 I hope you find some of this useful. I welcome any corrections, feedback
 and suggestions!
