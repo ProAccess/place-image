@@ -17,12 +17,16 @@ blockquote {
 
 tr {
     border-bottom: 1px solid #ddd;
-    vertical-align: top;
-    padding: px;
 }
 
 td {
     padding: 5px 3px;
+    vertical-align: top;
+}
+
+th {
+    padding: 5px 3px;
+    vertical-align: bottom;
 }
 
 .li {

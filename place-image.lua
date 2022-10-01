@@ -1,4 +1,4 @@
---[[  -- George Markle 22/09/17
+--[[  -- George Markle 22/10/01
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -903,8 +903,7 @@ function Image(img)
     elseif (FORMAT:match "docx") then
         print("Writing docx image")
 
-        img_docx = -- Experiment to see if we can avoid embedding the full 'Image ' object
-       
+        --[[         img_docx = -- Experiment to see if we can avoid embedding the full 'Image ' object       
             '<w:drawing><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">\
             <pic:nvPicPr>\
             <pic:cNvPr id="0" name="./images-md/availability-curve-500.png"/>\
@@ -926,7 +925,7 @@ function Image(img)
             </a:prstGeom>\
             </pic:spPr>\
             </pic:pic></w:drawing>'
-
+ ]]
         if (#err_msg > 1) then
             er_msg =
                 "<w:rPr><w:color w:val='DD0000' /></w:rPr><w:t>[ERROR IN IMAGE INFORMATION - " ..
