@@ -228,7 +228,8 @@ function Meta(meta)
         ["a7"] = "74mm",
         ["a8"] = "52mm"
     }
-    if stringify(meta.papersize) ~= nil then
+    -- if stringify(meta.papersize) ~= nil then
+    if meta.papersize ~= nil then
         papersize = string.lower(stringify(meta.papersize))
         if papersizes[papersize] ~= nil then
             page_width = dimToInches(papersizes[papersize])
