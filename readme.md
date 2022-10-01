@@ -234,7 +234,8 @@ option, e.g., “--lua-filter=place-image.lua”. An example might be
 Alternatively, if you are working within an environment like R-Studio
 that runs Pandoc, it may be included in the YAML header, for example,
 
-<pre><code>---
+<pre><code>
+---
 title: \"My extraordinarily beautiful document\" 
 output:
   html_document:
@@ -251,7 +252,7 @@ should be included in the latex template file. (They already are in the
 “default.latex” and “eisvogel.latex” templates in the “templates” folder
 on this site.)
 
-`\usepackage{layouts} % allows calculating width relative to latex/pdf page width \usepackage{wrapfig} % enables text wrap-around of figures \usepackage[export]{adjustbox}  % must include to enable additional positioning`
+`\usepackage{layouts} % allows calculating width relative to latex/pdf page width   \usepackage{wrapfig} % enables text wrap-around of figures   \usepackage[export]{adjustbox}  % must include to enable additional positioning`
 
 Again, these package statements already are in the following two
 template versions included on this site, either of which you can use for
