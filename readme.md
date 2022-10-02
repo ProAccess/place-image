@@ -12,6 +12,7 @@ output:
     - –lua-filter=place-image.lua
     template: ./templates/eisvogel.latex
   markdown_document:
+    keep_log: true
     pandoc_args:
     - –lua-filter=place-image.lua
     template: ./default.markdown
@@ -34,7 +35,7 @@ created by Pandoc from markdown documents. Now you can specify a variety
 of image parameters directly within markdown images statements. Here are
 two brief examples:
 
-<img src="./images-md/examples.png" style="width:100.0%" />
+<img src="./images-md/examples.png" style="width:100%" />
 
 This filter allows you to specify parameters such as…
 
