@@ -1,6 +1,3 @@
----
-title: place-image pandoc lua filter adds image flexibility
----
 
 # A solution for enhanced image control
 
