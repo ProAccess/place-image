@@ -1,4 +1,4 @@
----
+{---
 imageplacement: "cap_label=“Figure”, cap_label_sep=“:\\_”"
 output:
   html_document:
@@ -194,7 +194,7 @@ Currently this filter supports Pandoc converson of markdown documents to
 
 <a name="commands-table"></a>
 
-# Image parameter details{commands-table}
+# Image parameter details
 
 Below is a table of parameters you can include in your markdown image
 specifier. Wherever a size dimension is required, you can use any of the
