@@ -1,3 +1,31 @@
+---
+imageplacement: "cap_label=“Figure”, cap_label_sep=“:\\_”"
+output:
+  html_document:
+    css: css-md/mdstyles.css
+    pandoc_args:
+    - –lua-filter=place-image.lua
+    self_contained: no
+    template: ./templates/default.html5
+  latex_document:
+    pandoc_args:
+    - –lua-filter=place-image.lua
+    template: ./templates/eisvogel.latex
+  markdown_document:
+    keep_log: true
+    pandoc_args:
+    - –lua-filter=place-image.lua
+    template: ./default.markdown
+  pdf_document:
+    pandoc_args:
+    - –lua-filter=place-image.lua
+    template: ./templates/eisvogel.latex
+  word_document:
+    pandoc_args:
+    - –lua-filter=place-image.lua
+    reference_docx: ./templates/reference_template.docx
+title: place-image pandoc lua filter adds image flexibility
+---
 
 # A solution for enhanced image control
 
@@ -7,35 +35,35 @@ created by Pandoc from markdown documents. Now you can specify a variety
 of image parameters directly within markdown images statements. Here are
 two brief examples:
 
-<img src="./images-md/examples.png" style="width:100%" />
+<img src="./images-md/examples.png" style="width:100.0%" />
 
-This filter allows you to specify parameters such as…
+This filter allows you to specify these parameters:
 
--   “width” – Image width
--   “position” – horizontal position on page (left, center, right,
+-   width – Image width
+-   position – horizontal position on page (left, center, right,
     float-left, float-right; floats are text-wrapped.)
--   “h_padding”, “v_padding” – padding between image, caption and
+-   h_padding, v_padding – padding between image, caption and
     surrounding text.
--   “cap_width” – Width of caption text. If expressed as percent, will
-    be relative to image width.
--   “cap_position” – above or below. Default is above.
--   “cap_h\_position” – horizontal position of caption block relative to
+-   cap_width – Width of caption text. If expressed as percent, will be
+    relative to image width.
+-   cap_position – above or below. Default is above.
+-   cap_h\_position – horizontal position of caption block relative to
     image (left, center, right). Default is center.
--   “cap_text_align” – If specified: left, center, right
--   “cap_text_size” – If specified: small, normal, large. Default is
+-   cap_text_align – If specified: left, center, right
+-   cap_text_size – If specified: small, normal, large. Default is
     normal.
--   “cap_text_font” – If specified, font must be among system fonts.
--   “cap_text_style” – If specified: plain, italic, bold, bold-oblique,
+-   cap_text_font – If specified, font must be among system fonts.
+-   cap_text_style – If specified: plain, italic, bold, bold-oblique,
     bold-italic. Default is plain.
--   “cap_label” – If specified, can be any, e.g., “Figure”, “Photo”, “My
+-   cap_label – If specified, can be any, e.g., “Figure”, “Photo”, “My
     Fantastic Table”, etc. Number following label will be respective to
     the label.
--   “cap_label_style” – If specified: plain, italic, bold, bold-oblique,
+-   cap_label_style – If specified: plain, italic, bold, bold-oblique,
     bold-italic. Default is plain.
--   “cap_label_sep” – If specified, indicates separater between caption
+-   cap_label_sep – If specified, indicates separater between caption
     label number and caption, e.g., “: ”
--   “pdf_adjust_lines” – Used to compensate for inaccurate wraps in
-    Pandoc conversions to pdf and latex formats.
+-   pdf_adjust_lines – Used to compensate for inaccurate wraps in Pandoc
+    conversions to pdf and latex formats.
 
 This filter lets you specify display of images in two ways: (1) for each
 image and (2) for all images, globally.
@@ -58,7 +86,7 @@ the top of the markdown document, e.g.,
 
 `imageplacement: width=2.5in, cap_label="My Figure", cap_position=above`
 
-### You can even specify different params for different document types
+### You can even specify different image params for different document types
 
 You can preface any parameter with a document format identifier and that
 parameter will override any default or other image parameter for that
@@ -92,8 +120,6 @@ the caption *below* (rather than above) the image.
 
 These and other available parameters are [listed
 below](#commands-table).
-
-<a name="global-params"></a>
 
 ## Global parameters applying to *all* doc images
 
@@ -168,7 +194,7 @@ Currently this filter supports Pandoc converson of markdown documents to
 
 <a name="commands-table"></a>
 
-# What this filter allows you to do
+# Image parameter details{commands-table}
 
 Below is a table of parameters you can include in your markdown image
 specifier. Wherever a size dimension is required, you can use any of the
@@ -201,12 +227,13 @@ You may enter parameters in any order, for example:
 | cap_text_size      | Allows tweak of caption text size relative to body text                                                                                                                                                                                                                                                                                                                                                                            | small   | Options: small, normal, large<br/>Example: cap_text_size=normal                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | cap_text_font      | If specified, font must be a registered system font; use sparingly                                                                                                                                                                                                                                                                                                                                                                 |         | Options may include any system font.<br/>Examples: cap_text_font=Helvetica, cap_text_font=Arial, cap_text_font=Times, etc.                                                                                                                                                                                                                                                                                                                                                        |
 | cap_text_style     | Caption text style                                                                                                                                                                                                                                                                                                                                                                                                                 | plain   | plain, italic, bold, oblique, bold-oblique                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| cap_label          | Allows specifying a numbered custom label that appears before caption                                                                                                                                                                                                                                                                                                                                                              | none    | Options may include any string. For example, “cap_label=Figure” will result in a label like “Figure 4”.<br/>cap_label=Photo will produce a lable like “Photo 1”, etc. Note: If your label is more than one word, you must enclose it within quotes, e.g., “My Photo”.                                                                                                                                                                                                             |
-| cap_label_sep      | Allows specifying a custom separator character(s) between the numbered custom label and caption. Note: If your label is more than one word, you must enclose it within quotes, e.g., “My Photo”; otherwise, only the first word (“My”) will be included.                                                                                                                                                                           |   “: ”  | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…”<br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters:<br/>‘cap_label_sep=“\_-\_”’<br/>It will appear as, for example,<br/>“Photo 2 - My caption…” |
+| cap_label          | Allows specifying a numbered custom label that appears before caption                                                                                                                                                                                                                                                                                                                                                              | none    | Options may include any string. For example, “cap_label=Figure” will result in a label like “Figure 4”.<br/>“cap_label=Photo” will produce a lable like “Photo 1”, etc. Note: If your label is more than one word, you must enclose it within quotes, e.g., “My Photo”; otherwise, only the first word (“My”) will be included.                                                                                                                                                   |
+| cap_label_sep      | Allows specifying a custom separator character(s) between the numbered custom label and caption.                                                                                                                                                                                                                                                                                                                                   |   “: ”  | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…”<br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters:<br/>‘cap_label_sep=“\_-\_”’<br/>It will appear as, for example,<br/>“Photo 2 - My caption…” |
 | latex_adjust_lines | This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes the wrapfig extension misjudges wrap height and text may flow into the image below or have too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the image width in such cases, e.g., “width=42%” instead of “…45%.”) |         | This parameter affects *only* latex/pdf images. Examples: latex_adjust_lines=10, latex_adjust_lines=12, latex_adjust_lines=15, etc.                                                                                                                                                                                                                                                                                                                                               |
 |                    |                                                                                                                                                                                                                                                                                                                                                                                                                                    |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
--   A number followed immediately by one of “in”, “cm”, “mm” or “px”
+Values should be a number followed immediately by one of “in”, “cm”,
+“mm” or “px”
 
 # Invoking filter from Pandoc
 
@@ -264,10 +291,10 @@ space below the image. This is because wrapfig *guesses* the equivalent
 number of blank lines needed to match the height of the image — and
 sometimes it guesses wrong. Should this problem occur, you may enter a
 ‘pdf_adjust_lines’ parameter to try different equialent line heights for
-that image, e.g., “10”, “15”, etc., until you are satisfied. Here are a
-few examples of using the ‘pdf_adjust_lines’ parameter:
+that image, e.g., “10”, “15”, etc., until you are satisfied. Here’s an
+example of using the ‘pdf_adjust_lines’ parameter:
 
-`pdf_adjust_lines=10 pdf_adjust_lines=12 pdf_adjust_lines=15, etc.`
+`![My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above pdf_adjust_lines=12}`
 
 I hope you find some of this useful. I welcome any corrections, feedback
 and suggestions!
