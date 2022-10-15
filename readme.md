@@ -306,13 +306,17 @@ its bottom does not extend into a table.
 ### Use the format-specific *‘`pdf:`’* prefix for pdf/latex image parameters
 
 For pdf and latex documents, you’ll want to make liberal use of the
-document type prefix *‘pdf:’* with your image parameters. For example,
-if you’ve specified a width of 50% for a float-right image but the pdf
-version extends below the bottom margin, you may be able to resolve the
-issue by specifying a different image width for pdf/latex documents,
-like this:
+document type prefix *‘pdf:’* with your image parameters. This will
+cause the parameter value to override a default or other specified
+value. For example, if you’ve specified a width of 50% for a float-right
+image but the pdf version extends below the bottom margin, you may be
+able to resolve the issue by specifying a different image width for
+pdf/latex documents, like this:
 
 `![My caption](my-image.jpg){position=float-right width=40% pdf:width=35% cap_label="My Figure" pdf_adjust_lines=12}`
+
+This should cause the image to appear at 35% width for a pdf or latex
+doc format, while it will appear at 40% width for any other doc format.
 
 Alternatively, you may elect not to float the image in a pdf/latex doc
 with the position parameter like this:
