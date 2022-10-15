@@ -272,14 +272,14 @@ output to pdf/latex.
 The fewest issues should be encounted by using percentage `%` rather
 than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
 
-\`width=40%
+`width=40%`
 
 #### Space images properly
 
 Avoid placing floated images too close together. Whenever the pandoc
 converter encounters a floated image too close to a top or bottom
 margin, it will move the image, which may unexpectedly cause overlap
-with another image; Armagedon may follow.
+with another image; Armageddon may follow.
 
 ### Repairing defective text-wraps
 
@@ -295,28 +295,29 @@ enter a ‘pdf_adjust_lines’ parameter to try different equialent line
 heights for that image, e.g., “10”, “15”, etc., until you are satisfied.
 Here’s an example of using the ‘pdf_adjust_lines’ parameter:
 
-`![My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above pdf_adjust_lines=12}`
+`![My caption](my-image.jpg){position=float-right width=40% cap_label="My Figure" pdf_adjust_lines=12}`
 
-### Floated image causing margins to move
+### Floated image near a table causing left/right margins to move
 
 A wrapped image that causes text from a table to float around it may
 cause a margin below it to change. Move or resize the image to ensure
 its bottom does not extend into a table.
 
-### Use the format-specific *‘`pdf:`’* prefix for pdf/latex images
+### Use the format-specific *‘`pdf:`’* prefix for pdf/latex image parameters
 
 For pdf and latex documents, you’ll want to make liberal use of the
 document type prefix *‘pdf:’* with your image parameters. For example,
 if you’ve specified a width of 50% for a float-right image but the pdf
 version extends below the bottom margin, you may be able to resolve the
-issue by specifying a different image width, like this:
+issue by specifying a different image width for pdf/latex documents,
+like this:
 
-`pdf:width=35%`
+`![My caption](my-image.jpg){position=float-right width=40% pdf:width=35% cap_label="My Figure" pdf_adjust_lines=12}`
 
 Alternatively, you may elect not to float the image in a pdf/latex doc
 with the position parameter like this:
 
-`pdf:position=center`
+`![My caption](my-image.jpg){position=center width=40% cap_label="My Figure" pdf_adjust_lines=12}`
 
 The `prefix` modifier can be a powerful means of adjusting images that
 appear problematic in pdf (or other) formats.
