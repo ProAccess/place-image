@@ -1,27 +1,3 @@
-|                                                             |
-|-------------------------------------------------------------|
-| title: place-image pandoc lua filter adds image flexibility |
-| imageplacement: cap_label=“Figure”, cap_label_sep=“:\_”     |
-| output:                                                     |
-| markdown_document:                                          |
-| template: “./default.markdown”                              |
-| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
-| keep_log: true                                              |
-| template: “templates/default.markdown”                      |
-| latex_document:                                             |
-| template: “./templates/eisvogel.latex”                      |
-| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
-| word_document:                                              |
-| reference_docx: “./templates/reference_template.docx”       |
-| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
-| html_document:                                              |
-| css: “css-md/mdstyles.css”                                  |
-| template: “./templates/default.html5”                       |
-| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
-| self_contained: no                                          |
-| pdf_document:                                               |
-| template: “./templates/eisvogel.latex”                      |
-| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
 
 # A solution for enhanced image control
 
