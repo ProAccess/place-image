@@ -235,7 +235,7 @@ output:
 ---
 </code></pre>
 
-# Special considerations for latex/pdf documents
+# Special considerations for floated images in latex/pdf documents
 
 ## Include these packages
 
@@ -258,10 +258,10 @@ Pandoc conversion into latex/pdf documents:
 
 <a name="using-wrapfig"></a>
 
-## Image wrapping in latex/pdf documents
+## Image wrapping issues in latex/pdf documents
 
 There are some known issues when floating images (with text wrap) for
-pdf and latex documents that can elicit every disease known to medical
+pdf and latex documents that may elicit every disease known to medical
 science. Ensure you review the caveats and hints below if you plan to
 output to pdf/latex.
 
@@ -274,30 +274,31 @@ than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
 
 `width=40%`
 
-#### Space images properly
+#### Avoid placing floated images too close together
 
-Avoid placing floated images too close together. Whenever the pandoc
-converter encounters a floated image too close to a top or bottom
-margin, it will move the image, which may unexpectedly cause overlap
-with another image; Armageddon may follow.
+Whenever the pandoc converter encounters a floated image too close to a
+top or bottom margin, it will move the image, which may unexpectedly
+cause overlap with another image; Armageddon may follow.
 
 ### Repairing defective text-wraps
 
 #### Vertical wrap accuracy issue
 
-There is a known issue with respect to wrapfig’s text-wrap accuracy.
-After you’ve generated a latex or pdf document, it’s common to find some
-floated images with extra blank space below the image or the image
-extending into wrapped text below. This is because wrapfig *guesses* the
-equivalent number of blank lines needed to match the height of the image
-— and sometimes it guesses wrong. Should this problem occur, you may
-enter a ‘pdf_adjust_lines’ parameter to try different equialent line
-heights for that image, e.g., “10”, “15”, etc., until you are satisfied.
-Here’s an example of using the ‘pdf_adjust_lines’ parameter:
+There is a known issue with respect to pandoc/wrapfig’s text-wrap
+accuracy. After you’ve generated a latex or pdf document, it’s common to
+find some floated images with extra blank space below the image or the
+image extending into wrapped text below. This is because pandoc
+*guesses* the equivalent number of blank lines needed to match the
+height of the image — and sometimes it guesses wrong.
+
+Should this problem occur, you may enter a ‘pdf_adjust_lines’ parameter
+to try different equialent line heights for that image, e.g., “10”,
+“15”, etc., until the wrap height is correct. Here’s an example of using
+the ‘pdf_adjust_lines’ parameter:
 
 `![My caption](my-image.jpg){position=float-right width=40% cap_label="My Figure" pdf_adjust_lines=12}`
 
-### Floated image near a table causing left/right margins to move
+### Floated image near a table causing left or right margin to move
 
 A wrapped image that causes text from a table to float around it may
 cause a margin below it to change. Move or resize the image to ensure
@@ -321,7 +322,10 @@ doc format, while it will appear at 40% width for any other doc format.
 Alternatively, you may elect not to float the image in a pdf/latex doc
 with the position parameter like this:
 
-`![My caption](my-image.jpg){position=center width=40% cap_label="My Figure" pdf_adjust_lines=12}`
+`![My caption](my-image.jpg){position=center width=40% cap_label="My Figure"}`
+
+Note, in this case we are not *floating* the image so the
+`pdf_adjust_lines` parameter is not needed.
 
 The `prefix` modifier can be a powerful means of adjusting images that
 appear problematic in pdf (or other) formats.
