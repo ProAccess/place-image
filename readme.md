@@ -1,3 +1,27 @@
+|                                                             |
+|-------------------------------------------------------------|
+| title: place-image pandoc lua filter adds image flexibility |
+| imageplacement: cap_label=“Figure”, cap_label_sep=“:\_”     |
+| output:                                                     |
+| markdown_document:                                          |
+| template: “./default.markdown”                              |
+| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
+| keep_log: true                                              |
+| template: “templates/default.markdown”                      |
+| latex_document:                                             |
+| template: “./templates/eisvogel.latex”                      |
+| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
+| word_document:                                              |
+| reference_docx: “./templates/reference_template.docx”       |
+| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
+| html_document:                                              |
+| css: “css-md/mdstyles.css”                                  |
+| template: “./templates/default.html5”                       |
+| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
+| self_contained: no                                          |
+| pdf_document:                                               |
+| template: “./templates/eisvogel.latex”                      |
+| pandoc_args: \[“–lua-filter=place-image.lua”\]              |
 
 # A solution for enhanced image control
 
@@ -12,13 +36,15 @@ two brief examples:
 This filter allows you to specify these parameters:
 
 -   width – Image width
--   position – horizontal position on page (left, center, right,
+-   position – Horizontal position on page (left, center, right,
     float-left, float-right; floats are text-wrapped.)
--   h_padding, v_padding – padding between image, caption and
+-   h_padding, v_padding – Padding between image, caption and
     surrounding text.
 -   cap_width – Width of caption text. If expressed as percent, will be
     relative to image width.
--   cap_position – above or below. Default is above.
+-   cap_space – Space between caption and image.
+-   cap_position – Vertical positon relative to image: above or below.
+    Default is above.
 -   cap_h\_position – horizontal position of caption block relative to
     image (left, center, right). Default is center.
 -   cap_text_align – If specified: left, center, right
@@ -58,6 +84,8 @@ the top of the markdown document, e.g.,
 
 `imageplacement: width=2.5in, cap_label="My Figure", cap_position=above`
 
+<a name="format_specific"></a>
+
 ### You can even specify different image params for different document types
 
 You can preface any parameter with a document format identifier and that
@@ -76,6 +104,8 @@ Supported document format identifiers include the following:
 -   latex:
 -   epub:
 
+<a name="global_params"></a>
+
 ## Parameters for a specific image
 
 Parameters in *specific image* statements must *not* be separated by
@@ -92,6 +122,8 @@ the caption *below* (rather than above) the image.
 
 These and other available parameters are [listed
 below](#commands-table).
+
+<a name="global-params"></a>
 
 ## Global parameters applying to *all* doc images
 
@@ -177,7 +209,7 @@ dimension, e.g., “350px”. “350 px” may produce unexpected results.
 -   in — inches
 -   cm — centimeters
 -   mm — milimeters
--   px — pixels (at 72 per-inch)
+-   px — pixels (at 96 per-inch)
 
 You may enter parameters in any order, for example:
 
@@ -191,15 +223,16 @@ You may enter parameters in any order, for example:
 | width              | Image width                                                                                                                                                                                                                                                                                                                                                                                                                        | 50%     | width=35%, width=200px, width=3cm, width=2.5in                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | position           | Horizontal position relative to page                                                                                                                                                                                                                                                                                                                                                                                               | center  | Options: left, center, right, float-left, float-right; floats are text-wrapped.<br/>Examples: position=center, position=float-right                                                                                                                                                                                                                                                                                                                                               |
 | h_padding          | Horizontal separation between image and surrounding text                                                                                                                                                                                                                                                                                                                                                                           | 0.15in  | h_padding=0.15in, h_padding=4mm, h_padding=10px, etc.                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| v_padding          | Vertical separation between image and surrounding text                                                                                                                                                                                                                                                                                                                                                                             | 0.1in   | v_padding=0.12in, v_padding=.3cm, v_padding=9px, etc.                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| v_padding          | Vertical separation between image and surrounding text                                                                                                                                                                                                                                                                                                                                                                             | 0.15in  | v_padding=0.12in, v_padding=.3cm, v_padding=9px, etc.                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | cap_width          | Width of caption. If percent, relative to image width                                                                                                                                                                                                                                                                                                                                                                              | 90%     | cap_width=100%, cap_width=250px, cap_width=1in, etc.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| cap_space          | Space between caption and image                                                                                                                                                                                                                                                                                                                                                                                                    | 0.15in  | Example: cap_space=0.12in                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | cap_position       | Caption vertical position relative to image                                                                                                                                                                                                                                                                                                                                                                                        | above   | Options: above, below<br/>Example: cap_position=below                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | cap_h\_position    | Caption horizontal alignment relative to image (caption itself may only be above or below)                                                                                                                                                                                                                                                                                                                                         | center  | Options: left, center, right<br/>Example: cap_h\_position=left                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | cap_text_align     | Caption text alignment                                                                                                                                                                                                                                                                                                                                                                                                             | center  | Options: left, center, right<br/>Example: cap_text_align=left                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | cap_text_size      | Allows tweak of caption text size relative to body text                                                                                                                                                                                                                                                                                                                                                                            | small   | Options: small, normal, large<br/>Example: cap_text_size=normal                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | cap_text_font      | If specified, font must be a registered system font; use sparingly                                                                                                                                                                                                                                                                                                                                                                 |         | Options may include any system font.<br/>Examples: cap_text_font=Helvetica, cap_text_font=Arial, cap_text_font=Times, etc.                                                                                                                                                                                                                                                                                                                                                        |
 | cap_text_style     | Caption text style                                                                                                                                                                                                                                                                                                                                                                                                                 | plain   | plain, italic, bold, oblique, bold-oblique                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| cap_label          | Allows specifying a numbered custom label that appears before caption                                                                                                                                                                                                                                                                                                                                                              | none    | Options may include any string. For example, “cap_label=Figure” will result in a label like “Figure 4”.<br/>“cap_label=Photo” will produce a lable like “Photo 1”, etc. Note: If your label is more than one word, you must enclose it within quotes, e.g., “My Photo”; otherwise, only the first word (“My”) will be included.                                                                                                                                                   |
+| cap_label          | Allows specifying a numbered custom label that appears before caption                                                                                                                                                                                                                                                                                                                                                              | none    | Options may include any string. For example, ‘cap_label=“Figure”’ will result in a label like “Figure 4”.<br/>‘cap_label=“Photo”’ will produce a lable like “Photo 1”, etc. Note: You must enclose your label within quotes, e.g., “My Photo”.                                                                                                                                                                                                                                    |
 | cap_label_sep      | Allows specifying a custom separator character(s) between the numbered custom label and caption.                                                                                                                                                                                                                                                                                                                                   |   “: ”  | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…”<br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters:<br/>‘cap_label_sep=“\_-\_”’<br/>It will appear as, for example,<br/>“Photo 2 - My caption…” |
 | latex_adjust_lines | This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes the wrapfig extension misjudges wrap height and text may flow into the image below or have too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the image width in such cases, e.g., “width=42%” instead of “…45%.”) |         | This parameter affects *only* latex/pdf images. Examples: latex_adjust_lines=10, latex_adjust_lines=12, latex_adjust_lines=15, etc.                                                                                                                                                                                                                                                                                                                                               |
 |                    |                                                                                                                                                                                                                                                                                                                                                                                                                                    |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -212,7 +245,7 @@ Values should be a number followed immediately by one of “in”, “cm”,
 This filter can be invoked on the command line with the “–lua-filter”
 option, e.g., “--lua-filter=place-image.lua”. An example might be
 
-`pandoc -f markdown -t html test.md -o test.html --css=./css-md/mdstyles.css --template=templates/default.html5 --lua-filter=./place-image.lua -s`
+`pandoc -f markdown -t html myfile.md -o myfile.html --css=./css-md/mdstyles.css --template=templates/default.html5 --lua-filter=./place-image.lua -s`
 
 Alternatively, if you are working within an environment like R-Studio
 that runs Pandoc, it may be included in the YAML header, for example,
@@ -251,24 +284,67 @@ Pandoc conversion into latex/pdf documents:
 
 ## Image wrapping in latex/pdf documents
 
-Image wrapping for floating images in these formats is handled by Donald
-Arseneau’s neat ‘wrapfig’ package.
+There are some known issues when floating images (with text wrap) for
+pdf and latex documents that can elicit every disease known to medical
+science. Ensure you review the caveats and hints below if you plan to
+output to pdf/latex.
+
+### Avoiding issues
+
+#### Use “%” for image width
+
+The fewest issues should be encounted by using percentage `%` rather
+than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
+
+\`width=40%
+
+#### Space images properly
+
+Avoid placing floated images too close together. Whenever the pandoc
+converter encounters a floated image too close to a top or bottom
+margin, it will move the image, which may unexpectedly cause overlap
+with another image; Armagedon may follow.
 
 ### Repairing defective text-wraps
 
+#### Vertical wrap accuracy issue
+
 There is a known issue with respect to wrapfig’s text-wrap accuracy.
 After you’ve generated a latex or pdf document, it’s common to find some
-floated images extending into wrapped text below, or with extra blank
-space below the image. This is because wrapfig *guesses* the equivalent
-number of blank lines needed to match the height of the image — and
-sometimes it guesses wrong. Should this problem occur, you may enter a
-‘pdf_adjust_lines’ parameter to try different equialent line heights for
-that image, e.g., “10”, “15”, etc., until you are satisfied. Here’s an
-example of using the ‘pdf_adjust_lines’ parameter:
+floated images with extra blank space below the image or the image
+extending into wrapped text below. This is because wrapfig *guesses* the
+equivalent number of blank lines needed to match the height of the image
+— and sometimes it guesses wrong. Should this problem occur, you may
+enter a ‘pdf_adjust_lines’ parameter to try different equialent line
+heights for that image, e.g., “10”, “15”, etc., until you are satisfied.
+Here’s an example of using the ‘pdf_adjust_lines’ parameter:
 
 `![My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above pdf_adjust_lines=12}`
 
-I hope you find some of this useful. I welcome any corrections, feedback
-and suggestions!
+### Floated image causing margins to move
+
+A wrapped image that causes text from a table to float around it may
+cause a margin below it to change. Move or resize the image to ensure
+its bottom does not extend into a table.
+
+### Use the format-specific *‘`pdf:`’* prefix for pdf/latex images
+
+For pdf and latex documents, you’ll want to make liberal use of the
+document type prefix *‘pdf:’* with your image parameters. For example,
+if you’ve specified a width of 50% for a float-right image but the pdf
+version extends below the bottom margin, you may be able to resolve the
+issue by specifying a different image width, like this:
+
+`pdf:width=35%`
+
+Alternatively, you may elect not to float the image in a pdf/latex doc
+with the position parameter like this:
+
+`pdf:position=center`
+
+The `prefix` modifier can be a powerful means of adjusting images that
+appear problematic in pdf (or other) formats.
+
+##### I hope you find some of this useful. I welcome any corrections, feedback and suggestions!
 
 George

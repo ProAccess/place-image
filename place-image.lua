@@ -1,4 +1,4 @@
---[[  -- George Markle 22/10/01
+--[[  -- George Markle 22/10/05
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -10,7 +10,7 @@ local geometryVars -- Table from markdown meta table with geometry params
 local page_width = 8.5 -- Default printed page width in inches if papersize not specified in markdown header
 local l_mar = 1 -- Default Left margin in inches
 local r_mar = 1 -- Default Right margin in inches
-local text_width = 6.5 -- Length of text width (page width minus left and right margins); Set default in case page-type not specified
+local pg_text_width = 6.5 -- Length of text width (page width minus left and right margins); Set default in case page-type not specified
 local twips_per_point = 20
 local points_per_in = 72
 local pixels_per_in = 96
@@ -24,9 +24,11 @@ local dims = {"%", "in", "inches", "px", "pixels", "cm", "mm"}
 local valid_attr_names =
     { -- Names of valid parameters. Each parameter and its value separated by "="
         "width", -- Image width
+        "columns", -- Divisor by which width will be divided to fit within one of multiple table column cells
         "position", -- horizontal position on page (left, center, right)
         "h_padding", "v_padding", -- padding between image, caption and surrounding text.
         "cap_width", -- Width of caption text. If expressed as percent, will be relative to image width.
+        "cap_space", -- Space between caption and image
         "cap_position", -- above or below. Default is above.
         "cap_h_position", -- horizontal position of caption block relative to image (left, center, right). Default is center.
         "cap_text_align", -- If specified: left, center, right
@@ -46,24 +48,26 @@ local this_i = 3 -- 'This image-specific' column of image params table
 local src -- Image source
 local width_entered -- Width as entered
 local width_in -- Image width in inches
+local columns -- Divisor by which width will be divided to fit within one of multiple table column cells
 local wid_frac -- Fraction of page width the image width represents
 local cap_text -- Caption text
 local image_id
 local img_label = "" -- From markdown image specification, unique to enable link
 local results = "" -- String with code to be returned
 local results_img
-local docx_align_x
-local docx_align_x_xml = ""
+local docx_cap_pos
+local docx_text_align_xml = ""
 local docx_wrap = "notBeside"
 local docx_padding_h
 local docx_padding_v
-local frame_position -- Position specified, e.g., left, float-left, right, float-right, center
+local docx_cap_space
+local frame_position -- Position specified, e.g., left, center, right, float-left, float-right
 local frame_pos = "" -- Position abbreviated to left, right, center
 local cap_position = ""
 local ltx_position = "" -- Latex/PDF image horizontal position and wrap
 local ltx_positions = {} -- Contains doc-specifc code for each possible position
-local ltx_pos -- Latex/PDF caption horizontal position
-local ltx_text_align -- Latex/PDF caption text alignmentq
+local ltx_cap_h_pos -- Latex/PDF caption horizontal position
+local ltx_text_align -- Latex/PDF caption text alignment
 local ltx_cap_l_wd
 local ltx_cap_r_wd
 local ltx_cap_h_pos
@@ -93,7 +97,8 @@ local label_sep1 -- 1st label separater part will have same style as label
 local label_sep2 -- 2nd label separater part will have same style as caption
 
 local cap_width -- string as percentage
-local cap_wid -- percent converted to fraction
+local cap_wid_as_prcent -- percent converted to fraction
+local cap_space -- distance between caption and image
 local cap_width_in -- caption width in inches
 local cap_h_position
 local gl_html_padding_table = {} -- init global html padding specs
@@ -101,6 +106,7 @@ local custom_html_padding_table = {} -- Init html padding specs
 local padding_h -- horizontal padding in inches between image and text
 local padding_v -- vertical padding in inches between image and text
 local latex_figure_type
+local docx_extra_v_space = 0.12 * twips_per_in
 
 -- Caption text lists
 local cap_text_sizes = {"small", "normal", "large"}
@@ -168,16 +174,17 @@ function Meta(meta)
     local ptr = 1
     repeat -- Initialize table of image parameters
         image_params[valid_attr_names[ptr]] = {nil, nil, nil}
-        -- print("Image param: " .. image_params[valid_attr_names[i]])
         ptr = ptr + 1
     until ptr > #valid_attr_names
 
     -- Specify param value defaults
     image_params["width"][default_i] = "50%"
+    image_params["columns"][default_i] = "1"
     image_params["position"][default_i] = "center"
-    image_params["v_padding"][default_i] = ".1in"
+    image_params["v_padding"][default_i] = ".15in"
     image_params["h_padding"][default_i] = ".15in"
     image_params["cap_width"][default_i] = "90%"
+    image_params["cap_space"][default_i] = "0.15in"
     image_params["cap_position"][default_i] = "above"
     image_params["cap_h_position"][default_i] = "center"
     image_params["cap_text_align"][default_i] = "center"
@@ -188,11 +195,8 @@ function Meta(meta)
     image_params["cap_label"][default_i] = ""
     image_params["cap_label_style"][default_i] = "plain"
 
-    frame_position = image_params["position"][default_i] -- Default image frame position
-    padding_h = dimToInches(image_params["h_padding"][default_i]) -- horizontal padding in inches between image and text
-    padding_v = dimToInches(image_params["v_padding"][default_i]) -- vertical padding in inches between image and text
-    docx_padding_h = dimToInches(image_params["h_padding"][default_i])
-    docx_padding_v = dimToInches(image_params["v_padding"][default_i])
+    init() -- Init variables before next image
+
     gl_html_padding_table = {
         dimToInches(image_params["v_padding"][default_i]) * pixels_per_in,
         dimToInches(image_params["h_padding"][default_i]) * pixels_per_in,
@@ -202,11 +206,7 @@ function Meta(meta)
     for i = 1, 4, 1 do -- Refresh custom table with global table
         custom_html_padding_table[i] = gl_html_padding_table[i]
     end
-    ltx_pos = image_params["cap_h_position"][default_i] -- Latex/PDF caption horizontal position
-    -- custom_html_padding_table = gl_html_padding_table -- Init html padding specs
-    -- j = ""
-    -- for i = 1, 4, 1 do j = j .. custom_html_padding_table[i] .. "; " end
-    -- print("INITIAL custom_html_padding_table TABLE: " .. j)
+    ltx_cap_h_pos = image_params["cap_h_position"][default_i] -- Latex/PDF caption horizontal position
 
     -- Page widths from papersize
     local papersizes = { -- Widths of page types
@@ -251,7 +251,7 @@ function Meta(meta)
         if geometryVars["right"] ~= nil then
             r_mar = dimToInches(geometryVars["right"]) -- Get right margin in inches
         end
-        text_width = page_width - l_mar - r_mar
+        pg_text_width = page_width - l_mar - r_mar
     end
     -- Gather any global image parameters in Meta section
     doctype_overrides = {} -- Clear record of doc-type-specific overrides
@@ -271,7 +271,7 @@ function Meta(meta)
             ptr = j
             value = string.match(string.sub(glParStr, j + 1, j + 50),
                                  "[%%%-%+%_%w%.%:%s]+")
-            print("Just got Meta VAL: " .. tostring(value))
+            -- print("Just got Meta VAL: " .. tostring(value))
             if value == nil then
                 done = true
                 break
@@ -285,25 +285,27 @@ function Meta(meta)
     else
         print("No 'imageplacement' statement found in Meta section.")
     end
-    print("ACCUMULATED Meta err_msg: " .. err_msg)
     doctype_override(global_i, doctype_overrides) -- Override any parameters where doc-specific override indicated
-    -- print("GETTING PARAMS: " .. stringify(image_params[x][2]))
-    -- i = 1
-    -- repeat -- initialize table of image parameters
-    --     print("After init, global params for item " .. i .. " is: " ..
-    --               tostring(image_params[valid_attr_names[i]][2]))
-    --     i = i + 1
-    -- until i > #valid_attr_names
-    -- print("Number params: " .. #image_params)
-    -- print("Image global_i: " .. global_i)
     return meta
+end
+
+-- **************************************************************************************************
+-- Reset these variables before next image
+function init()
+    frame_position = image_params["position"][default_i] -- Default image frame position
+    padding_h = dimToInches(image_params["h_padding"][default_i]) -- horizontal padding in inches between image and text
+    padding_v = dimToInches(image_params["v_padding"][default_i]) -- vertical padding in inches between image and text
+    docx_padding_h = dimToInches(image_params["h_padding"][default_i])
+    docx_padding_v = dimToInches(image_params["v_padding"][default_i])
 end
 
 -- **************************************************************************************************
 -- Image function;
 function Image(img)
+    init()
     src = img.src
     local err = ""
+    local pos_center -- Horizontal center of image
     cap_text = stringify(img.caption)
     image_id = img.label
     html_style = "" -- Reset
@@ -336,18 +338,18 @@ function Image(img)
     if image_num > 1 then
         err_msg = "" -- Reset error message. Allows including Meta global errors in first error msg
     end
+    ptr = 1
+    repeat -- Reset params for this image
+        image_params[valid_attr_names[ptr]][this_i] = nil
+        -- print("Image param: " .. image_params[valid_attr_names[i]])
+        ptr = ptr + 1
+    until ptr > #valid_attr_names
     local parStr = tostring(img.attributes)
     if #img.attributes ~= 0 then
         -- Gather attributes and ensure each attribute name is valid
         local r = ""
         local name = ""
         local val = ""
-        ptr = 1
-        repeat -- Reset params for this image
-            image_params[valid_attr_names[ptr]][this_i] = nil
-            -- print("Image param: " .. image_params[valid_attr_names[i]])
-            ptr = ptr + 1
-        until ptr > #valid_attr_names
         doctype_overrides = {} -- Clear record of doc-type-specific overrides
         for ptr = 1, #img.attributes, 1 do
             -- print("Normal gather interation: " .. ptr .. "; of #img.attributes: " .. #img.attributes)
@@ -358,18 +360,18 @@ function Image(img)
             err = recordParam(name, val, this_i, doctype_overrides)
             if #err > 0 then err_msg = err_msg .. err end
         end
-        print("ACCUMULATED Image err_msg: " .. err_msg)
+        -- print("ACCUMULATED Image err_msg: " .. err_msg)
         -- print("ATTRIBUTES: " .. r)
         doctype_override(this_i, doctype_overrides) -- Override any param for which doc-type constraint indicated
     end
 
-    -- ptr = 1 -- Init counter
-    -- repeat -- Print complete table
-    --     v = valid_attr_names[ptr] -- Get next name from table of valid parameters
-    --     print("image_param", v, image_params[v][default_i],
-    --           image_params[v][global_i], image_params[v][this_i])
-    --     ptr = ptr + 1
-    -- until ptr > #valid_attr_names
+    ptr = 1 -- Init counter
+    repeat -- Print complete table
+        v = valid_attr_names[ptr] -- Get next name from table of valid parameters
+        print("image_param", v, image_params[v][default_i],
+              image_params[v][global_i], image_params[v][this_i])
+        ptr = ptr + 1
+    until ptr > #valid_attr_names
 
     -- Get any label embedded in caption
     i, j = string.find(tostring(img.caption[#img.caption]), "label{.+}")
@@ -397,6 +399,7 @@ function Image(img)
     if verify_entry(val,
                     {"left", "center", "right", "float-left", "float-right"}) then
         frame_position = val
+        print("Verified position as: " .. frame_position .. " for file " .. src)
     else
         frame_position = image_params["position"][default_i]
         err_msg = err_msg .. "Bad position ('" .. val .. "')" .. source
@@ -406,6 +409,16 @@ function Image(img)
         frame_pos = string.sub(frame_position, i + 1, 20)
     else
         frame_pos = frame_position
+    end
+
+    val, par_source = getParam("columns") -- Width divisor for adjusting image width   
+    print("val: " .. val .. "; tonumber(val): " .. tonumber(val) .. "; ")
+    if val ~= nil then
+        if tonumber(val) >= 1 and tonumber(val) <= 20 then
+            columns = math.floor(tonumber(val))
+        else
+            err_msg = err_msg .. "'columns' must be between 1 and 20"
+        end
     end
 
     val, par_source = getParam("v_padding") -- Frame vertical padding   
@@ -420,10 +433,6 @@ function Image(img)
         custom_html_padding_table[3] = gl_html_padding_table[3]
         docx_padding_v = dimToInches(image_params["v_padding"][default_i])
     end
-    print("custom_html_padding_table: " .. custom_html_padding_table[1],
-          custom_html_padding_table[3], custom_html_padding_table[3],
-          custom_html_padding_table[4])
-    print("padding_v: " .. padding_v)
 
     val, par_source = getParam("h_padding") -- Frame horizontal padding   
     padding_h, err = dimToInches(val)
@@ -447,12 +456,23 @@ function Image(img)
                       par_source
     end
 
-    val = getParam("cap_width") -- -- Caption width as percentage
+    val = getParam("cap_width") -- Caption width
     cap_width = val
     i, j = string.find(tostring(val), "%d+") -- Get dimension
-    cap_wid = tonumber(string.sub(val, i, j)) / 100
-    cap_width_in = cap_wid * width_in
+    cap_wid_as_prcent = tonumber(string.sub(val, i, j)) / 100 -- Get cap width as percentage
+    cap_width_in = cap_wid_as_prcent * width_in
     cap_html_style = cap_html_style .. "width:" .. cap_width .. "; "
+    print("Width of: " .. cap_width_in)
+
+    val, par_source = getParam("cap_space") -- Space between caption and image
+    cap_space, err = dimToInches(val)
+    if #err == 0 then -- If no error
+        if not (cap_space >= 0 and cap_space <= 1) then
+            cap_space = image_params["cap_space"][default_i]
+            err_msg = err_msg .. "Space between caption and image (" ..
+                          par_source .. ") must be between 0 and 1in."
+        end
+    end
 
     val, par_source = getParam("cap_h_position") -- Caption horizontal position relative to frame
     if verify_entry(val, {"left", "center", "right"}) then
@@ -482,11 +502,11 @@ function Image(img)
     val, par_source = getParam("cap_text_align") -- Caption text align
     if verify_entry(val, {"left", "center", "right"}) then
         cap_text_align = val
-        cap_html_style = cap_html_style .. "text-align:" .. cap_text_align ..
-                             "; "
-        docx_align_x_xml = '<w:jc w:val="' .. cap_text_align .. '" />'
-        caption_ltx_style = caption_ltx_style ..
-                                cap_ltx_text_alignment[cap_text_align]
+        -- cap_html_style = cap_html_style .. "text-align:" .. cap_text_align ..
+        --                      "; "
+        -- docx_text_align_xml = '<w:jc w:val="' .. cap_text_align .. '" />'
+        -- caption_ltx_style = caption_ltx_style ..
+        --                         cap_ltx_text_alignment[cap_text_align]
     else
         cap_text_align = image_params["cap_text_align"][default_i]
         err_msg = err_msg .. "Bad caption text alignment value ('" .. val ..
@@ -606,34 +626,29 @@ function Image(img)
         html_style = html_style .. "margin-right:auto; margin-left:0px; " ..
                          htmlPad(custom_html_padding_table, '', '', '', '0') ..
                          "; " -- Add to html style
-        docx_align_x = "left"
         docx_wrap = "notBeside"
 
     elseif (frame_position == "right") then
         html_style = html_style .. "margin-right:0px; margin-left:auto; " ..
                          htmlPad(custom_html_padding_table, '', '0', '', '') ..
                          "; "
-        docx_align_x = "right"
         docx_wrap = "notBeside"
     elseif (frame_position == "float-left") then
         html_style = html_style ..
                          "float:left; margin-right:auto; margin-left:0px; " ..
                          htmlPad(custom_html_padding_table, '', '', '', '0') ..
                          "; "
-        docx_align_x = "left"
         docx_wrap = "auto"
     elseif (frame_position == "float-right") then
         html_style = html_style ..
                          "float:right; margin-right:0px; margin-left:auto; " ..
                          htmlPad(custom_html_padding_table, '', '0', '', '') ..
                          "; "
-        docx_align_x = "right"
         docx_wrap = "auto"
     elseif (frame_position == "center" or img.attributes.position == nil) then
         html_style = html_style .. "margin-right:auto; margin-left:auto; " ..
                          htmlPad(custom_html_padding_table, '', '0', '', '0') ..
                          "; "
-        docx_align_x = "center"
         docx_wrap = "notBeside"
     end
 
@@ -646,9 +661,6 @@ function Image(img)
         if #cap_label_sep > 0 then -- If specified separator between label and caption
             i, j = string.find(cap_label_sep, "^%S*")
             x = string.sub(cap_label_sep, 1, 2)
-            print("Seperator start and stop - i: " .. i .. "; j: " .. j ..
-                      "; found: " .. string.sub(cap_label_sep, i, j) ..
-                      " which should equal " .. x)
             if i ~= nil then -- If first char(s) of separator are non-space
                 label_sep1 = string.sub(cap_label_sep, i, j) -- Will have same style as label
                 label_sep2 = string.sub(cap_label_sep, j + 1, 50) -- Anything after space has caption style
@@ -657,15 +669,18 @@ function Image(img)
                 label_sep1 = ""
                 label_sep2 = cap_label_sep
             end
-            print(
-                "FOUND sep1 = " .. tostring(label_sep1) .. "; label_sep2 = " ..
-                    label_sep2 .. "; i = " .. tostring(i) .. "; j = " ..
-                    tostring(j))
         end
     else
         cap_lbl = "" -- No figure type label
     end
 
+    -- Add cap text alignment to text_styles_list
+    cap_html_style = cap_html_style .. "text-align:" .. cap_text_align .. "; "
+    docx_text_align_xml = '<w:jc w:val="' .. cap_text_align .. '" />'
+    caption_ltx_style = caption_ltx_style ..
+                            cap_ltx_text_alignment[cap_text_align]
+
+    -- *************************************************************************
     -- HTML/Epub documents prep
     if (FORMAT:match "html" or FORMAT:match "epub") then -- For html documents
         html_style = html_style .. "width:" .. width_entered .. "; " -- Add width to html style
@@ -701,10 +716,11 @@ function Image(img)
                           cap_html .. "</div>"
         end
 
+        -- *************************************************************************
         -- Latex/PDF documents prep
     elseif FORMAT:match "latex" then -- For Latex/PDF documents
         cap_txt = "" -- Reset
-        print("Now processing latex/PDF")
+        print("Now processing latex/PDF for " .. src)
         src = string.gsub(src, "%%20", " ") -- Latex requires substituting real space for '%20'
         i, j = string.find(src, ".gif") -- Warn that GIF graphics cannot be converted to latex/pdf
         if i ~= nil then
@@ -717,9 +733,11 @@ function Image(img)
         if i ~= nil then
             wid_frac = tonumber(string.sub(wd, 1, i - 1)) / 100
         else
-            wid_frac = dimToInches(wd) / page_width -- MODIFY TO ACTUAL PAGE WIDTH
+            wid_frac = dimToInches(wd) / pg_text_width -- MODIFY TO ACTUAL PAGE WIDTH
         end
-        -- Caption POSITION lists: begin code, horizontal position
+        print("PAGE WIDTH for pdf: " .. page_width .. "; pg_text_width: " ..
+                  pg_text_width .. "; image wd: " .. wd .. "; wid_frac: " ..
+                  wid_frac .. "; dimToInches(wd): " .. dimToInches(wd))
         if pdf_adjust_lines ~= nil then -- If wrap lines adjustment specified
             ltx_adjust_lns = "[" .. pdf_adjust_lines .. "]" -- Compose code for it
         else
@@ -731,15 +749,18 @@ function Image(img)
             ["right"] = {'\\begin{figure}[htb]\\centering', 'flushright'},
             ["float-left"] = {
                 '\\begin{wrapfigure}' .. ltx_adjust_lns ..
-                    '{l}{X\\textwidth}\\centering', 'flushleft'
+                    '{l}{X\\linewidth}\\centering', 'flushleft'
             },
             ["float-right"] = {
                 '\\begin{wrapfigure}' .. ltx_adjust_lns ..
-                    '{r}{X\\textwidth}\\centering', 'flushright'
+                    '{r}{X\\linewidth}\\centering', 'flushright'
             }
         }
         ltx_position = ltx_positions[frame_position][1]
-        ltx_pos = ltx_positions[frame_position][2]
+        ltx_cap_h_pos = ltx_positions[frame_position][2]
+        print(
+            "ltx_position: " .. ltx_position .. "; ltx_pos: " .. ltx_cap_h_pos ..
+                "; frame_position: " .. frame_position)
         if #cap_text > 0 then -- If caption
             cap_txt = caption_ltx_style .. string.gsub(cap_text_ltx_style, "X",
                                                        string.gsub(
@@ -748,124 +769,120 @@ function Image(img)
                                                                label_sep1) ..
                                                            label_sep2 ..
                                                            cap_text) -- Include any style attributes
-            if cap_h_position == "left" then
-                ltx_cap_l_wd = .02
-                ltx_cap_r_wd = wid_frac - cap_wid
-            elseif cap_h_position == "right" then
-                ltx_cap_l_wd = 1 - cap_wid - .02
-                ltx_cap_r_wd = cap_wid
-            else
-                ltx_cap_l_wd = 0.5 - (cap_wid / 2)
-                ltx_cap_r_wd = cap_wid
+
+            i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
+            latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
+
+            if latex_figure_type == "{figure}" or columns > 1 then -- if for 'figure' or image within table
+                graphic_pos = ", " .. frame_position
+                graphic_siz_frac = wid_frac
+            else -- if for 'wrapfigure'
+                graphic_pos = ""
+                graphic_siz_frac = 1.0
             end
+            if cap_h_position == "left" then
+                ltx_cap_l_wd = 0
+                ltx_cap_r_wd = 0
+            elseif cap_h_position == "right" then
+                ltx_cap_l_wd = 1 - cap_wid_as_prcent
+                ltx_cap_r_wd = 0
+            else
+                ltx_cap_l_wd = 0.5 - cap_wid_as_prcent / 2
+                ltx_cap_r_wd = 0
+            end
+            print("GRAPHICS - ltx_cap_l_wd: " .. ltx_cap_l_wd ..
+                      "; ltx_cap_r_wd: " .. ltx_cap_r_wd ..
+                      "; graphic_siz_frac: " .. graphic_siz_frac ..
+                      "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
+
+            cap_txt = "{" .. cap_txt .. "}"
+            if (cap_position == "above") then
+                cap_pdg_above = padding_v
+                cap_pdg_below = cap_space
+                lnbr_above = ""
+                lnbr_below = "\\linebreak"
+            else
+                cap_pdg_above = cap_space
+                cap_pdg_below = padding_v
+                lnbr_above = "\\linebreak"
+                lnbr_below = ""
+            end
+
+            cap_row = '\\vspace{' .. cap_pdg_above .. 'in}' .. lnbr_above ..
+                          '\\begin{minipage}{' .. ltx_cap_l_wd ..
+                          '\\linewidth}{~}\\end{minipage}\\begin{minipage}{' ..
+                          cap_wid_as_prcent .. '\\linewidth}' .. cap_txt ..
+                          '\\end{minipage}\\begin{minipage}{' .. ltx_cap_r_wd ..
+                          '\\linewidth}{~}\\end{minipage}' .. '\\vspace{' ..
+                          cap_pdg_below .. 'in}' .. lnbr_below
+        else
+            cap_row = ""
         end
 
-        i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
-        latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
-        if latex_figure_type == "{figure}" then -- if for 'figure'
-            local graphic_width_factor = wd
-            graphic_pos = ", " .. frame_position
-            if #cap_text > 0 then -- If caption text
-                if (cap_position == "above") then
-                    c_above = "\\vspace{" .. padding_v .. "in}{" .. cap_txt ..
-                                  "}\\linebreak\\vspace{" .. padding_v .. "in}"
-                    c_below = "\\vspace{" .. padding_v .. "in}"
-                else -- Caption is below
-                    c_below = "\\vspace{" .. padding_v .. "in}{" .. "" ..
-                                  cap_txt .. "}{" .. padding_v .. "in}"
-                    c_above = "\\vspace{" .. padding_v .. "in}"
-                end
-            else -- If no caption text
-                c_above = "\\vspace{" .. padding_v .. "in}"
-                c_below = "\\vspace{" .. padding_v .. "in}"
-            end
-        else -- if for 'wrapfigure'
-            local width_minus_padding = width_in - padding_h
-            graphic_width_factor = width_minus_padding / text_width
-            graphic_wd_factor = width_minus_padding / width_in
-            -- print("graphic_width_factor: " .. graphic_width_factor)
-            -- print("width_in: " .. width_in .. "; padding_h: " .. padding_h ..
-            --          "; text_width: " .. text_width ..
-            --          "; graphic_width_factor = " .. graphic_width_factor)
-            graphic_pos = ""
-            if #cap_text > 0 then
-                cap_txt = "{" .. cap_txt .. "}"
-                if (cap_position == "above") then
-                    c_above = "{" .. cap_txt .. "}\\vspace{" .. padding_v ..
-                                  "in}"
-                    c_below = ""
-                else
-                    c_above = ""
-                    c_below = "{" .. cap_txt .. "}\\vspace{" .. padding_v ..
-                                  "in}"
-                end
-            else
-                c_above = ""
-                c_below = ""
-            end
+        frame_assembly = "\\begin{" .. ltx_cap_h_pos .. "}\\begin{minipage}{" ..
+                             graphic_siz_frac .. "\\linewidth}" -- Outer minipage includes both image and caption
+
+        if cap_position == "above" then -- If above
+            frame_assembly = frame_assembly .. cap_row ..
+                                 "\\includegraphics[width=" .. 1.0 ..
+                                 "\\linewidth" .. graphic_pos .. "]{" .. src ..
+                                 "}" .. "\\end{minipage}\\end{" .. ltx_cap_h_pos ..
+                                 "}"
+        else
+            frame_assembly =
+                frame_assembly .. "\\includegraphics[width=" .. 1.0 ..
+                    "\\linewidth" .. graphic_pos .. "]{" .. src .. "}" ..
+                    cap_row .. "\\end{minipage}\n\\end{" .. ltx_cap_h_pos .. "}"
         end
-        if latex_figure_type == "{figure}" then -- if for 'figure'
-            results =
-                "\\begin{" .. ltx_pos .. "}\\begin{minipage}{" .. wid_frac ..
-                    "\\linewidth}" -- Outer minipage includes both image and caption
-            if cap_position == "above" and #cap_text > 0 then -- If above
-                results = results .. "\\begin{minipage}{" .. ltx_cap_l_wd ..
-                              "\\linewidth}{~}\\end{minipage}\\begin{minipage}{" ..
-                              cap_wid .. "\\linewidth}" .. c_above ..
-                              "\\end{minipage}\n"
-            end
-            results = results .. "\\includegraphics[width=1.0\\textwidth" ..
-                          graphic_pos .. "]{" .. src .. "}"
-            if cap_position == "below" and #cap_text > 0 then -- If below
-                results = results .. "\\vspace{" .. padding_v ..
-                              "in}\\linebreak\\begin{minipage}{" .. ltx_cap_l_wd ..
-                              "\\linewidth}{~}\\end{minipage}\\begin{minipage}{" ..
-                              cap_wid .. "\\linewidth}" .. c_below ..
-                              "\\end{minipage}\n"
-            end
-            results = results .. "\\end{minipage}\\end{" .. ltx_pos .. "}"
+
+        -- if latex_figure_type == "{figure}" then -- if for 'figure'
+        if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
+            results = frame_assembly
         else -- if for 'wrapfigure'
             fig_open = string.gsub(ltx_position, "X", wid_frac) -- Insert width if wrapfigure
-            results = fig_open .. "\\vspace{-0.17in}" .. c_above ..
-                          "\\captionsetup{labelformat=empty}" ..
-                          "\\includegraphics[width=" .. graphic_wd_factor ..
-                          "\\linewidth" .. graphic_pos .. "]{" .. src ..
-                          "}\\label{" .. img_label .. "}\n" .. c_below ..
+            results = fig_open .. "\\vspace{-0.17in}" .. frame_assembly ..
                           "\\end" .. latex_figure_type
         end
 
+        -- *************************************************************************
         -- DOCX prep
     elseif (FORMAT:match "docx" or FORMAT:match "odt") then -- For WORD DOCX documents
         docx_padding_h = math.floor(padding_h * twips_per_in) -- default printed doc horizontal padding in inches between image and text
         docx_padding_v = math.floor(padding_v * twips_per_in)
+        docx_cap_space = cap_space * twips_per_in
         i, j = string.find(frame_position, "float") -- Is figure floated?
-        if i == nil then -- If caption not floated
-            cap_frame_wid = text_width - padding_h -- Account for padding
-        else
-            cap_frame_wid = width_in
+        if i == nil or columns > 1 then -- If caption not floated or image in table row cell w/other images
+            docx_img_frame_wd = pg_text_width / columns
+        else -- Figure is floated
+            docx_img_frame_wd = width_in
         end
-        if frame_position == "left" then
-            pos_center = width_in / 2
-        elseif frame_position == "center" then
-            pos_center = cap_frame_wid / 2
-        else
-            pos_center = cap_frame_wid - (width_in / 2)
+        if frame_pos == "left" then
+            pos_center = width_in / columns / 2
+        elseif frame_pos == "center" then
+            pos_center = docx_img_frame_wd / 2
+        elseif frame_pos == "right" then
+            pos_center = docx_img_frame_wd - (width_in / columns / 2)
         end
-        if cap_h_position == "left" then
-            cap_docx_ind_l = pos_center - width_in / 2
-            cap_docx_ind_r = cap_frame_wid - cap_docx_ind_l - cap_width_in
-        elseif cap_h_position == "center" then
-            cap_docx_ind_l = pos_center - (cap_width_in / 2)
-            cap_docx_ind_r = cap_frame_wid - cap_docx_ind_l - cap_width_in
-        elseif cap_h_position == "right" then
-            cap_docx_ind_l = pos_center + width_in / 2 - cap_width_in
-            cap_docx_ind_r = cap_frame_wid - cap_docx_ind_l - cap_width_in
-        end
-        docx_cap_par_style = '<w:pPr><w:ind w:left="' .. cap_docx_ind_l *
-                                 twips_per_in .. '" w:right = "' ..
-                                 cap_docx_ind_r * twips_per_in .. '" />' ..
-                                 docx_align_x_xml
 
+        if cap_h_position == "left" then
+            cap_docx_ind_l = 0
+            -- cap_docx_ind_l = pos_center - width_in / columns / 2
+            cap_docx_ind_r = docx_img_frame_wd -
+                                 (cap_docx_ind_l + cap_width_in / columns)
+        elseif cap_h_position == "center" then
+            cap_docx_ind_l = pos_center - cap_width_in / columns / 2
+            cap_docx_ind_r = docx_img_frame_wd - cap_docx_ind_l - cap_width_in /
+                                 columns
+        elseif cap_h_position == "right" then
+            cap_docx_ind_l = docx_img_frame_wd - cap_width_in / columns
+            cap_docx_ind_r = 0
+        end
+        print("width_in: " .. width_in .. "; docx_img_frame_wd: " ..
+                  docx_img_frame_wd .. "; pos_center: " .. pos_center ..
+                  "; frame_position: " .. frame_position .. "; cap_docx_ind_l: " ..
+                  cap_docx_ind_l .. "; cap_docx_ind_r: " .. cap_docx_ind_r ..
+                  "; cap_h_position: " .. cap_h_position .. "; frame_pos: " ..
+                  frame_pos)
         if #cap_text_docx_style > 0 then -- If specifying caption format then
             cap_text_docx_style = "<w:rPr>" .. cap_text_docx_style .. '</w:rPr>'
         else
@@ -879,6 +896,7 @@ function Image(img)
         end
     end -- End if
 
+    -- *************************************************************************
     -- HTML/Epub doc format COMPOSITION
     if (FORMAT:match "html" or FORMAT:match "epub") then
         print("Writing html image")
@@ -889,6 +907,7 @@ function Image(img)
         end
         return pandoc.RawInline('html', results)
 
+        -- *************************************************************************
         -- Latex/PDF doc format COMPOSITION
     elseif (FORMAT:match "latex") then -- Latex/PDF
         print("Writing latex/pdf image")
@@ -900,33 +919,10 @@ function Image(img)
         end
         return pandoc.RawInline('latex', results)
 
+        -- *************************************************************************
         -- Word docx format COMPOSITION
     elseif (FORMAT:match "docx") then
         print("Writing docx image")
-
-        --[[         img_docx = -- Experiment to see if we can avoid embedding the full 'Image ' object       
-            '<w:drawing><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">\
-            <pic:nvPicPr>\
-            <pic:cNvPr id="0" name="./images-md/availability-curve-500.png"/>\
-            <pic:cNvPicPr/>\
-            </pic:nvPicPr>\
-            <pic:blipFill>\
-            <a:blip r:embed="rId4" cstate="print"/>\
-            <a:stretch>\
-            <a:fillRect/>\
-            </a:stretch/>\
-            </pic:blipFill>\
-            <pic:spPr>\
-            <a:xfrm>\
-            <a:off x="0" y="0"/>\
-            <a:ext cx="2438400" cy="1828800"/>\
-            </a:xfrm>\
-            <a:prstGeom rst="rect>\
-            <a:avLst/>\
-            </a:prstGeom>\
-            </pic:spPr>\
-            </pic:pic></w:drawing>'
- ]]
         if (#err_msg > 1) then
             er_msg =
                 "<w:rPr><w:color w:val='DD0000' /></w:rPr><w:t>[ERROR IN IMAGE INFORMATION - " ..
@@ -935,73 +931,117 @@ function Image(img)
         else
             er_msg = ""
         end
-        img.attributes.width = inchesToPixels(width_in - padding_h) -- Ensure width expressed as pixels
-        frame_v_space_before =
-            '<w:pPr><w:spacing w:before="' .. docx_padding_v ..
-                '" w:beforeAutospacing="0" /></w:pPr>'
-        frame_v_space_after = '<w:pPr><w:spacing w:after="' .. docx_padding_v ..
-                                  '" w:afterAutospacing="0" /></w:pPr>'
-        par_v_space_before = '<w:spacing w:before="' .. docx_padding_v ..
-                                 '" w:beforeAutospacing="0" />'
-        par_v_space_after = '<w:spacing w:after="' .. docx_padding_v ..
-                                '" w:afterAutospacing="0" />'
-        img_pre = '<w:bookmarkStart w:id="0" w:name="' .. img_label ..
-                      '"/><w:bookmarkEnd w:id="0"/><w:pPr><w:spacing w:before="' ..
-                      docx_padding_v .. '" w:after="' .. docx_padding_v ..
-                      '" /><w:jc w:val="' .. docx_align_x .. '"/></w:pPr>'
-        img_post = '</w:p><w:p>'
         i, j = string.find(frame_position, "float") -- Is figure floated?
         if i == nil then -- If caption not floated 
+            float = false
+        else
+            float = true
+        end
+        if (cap_position == "above") then -- If caption above
+            if #cap_text > 0 then -- If caption
+                -- extra_space_above_caption = docx_extra_v_space
+                -- extra_space_below_caption = 0
+                space_above_caption = docx_padding_v
+                space_below_caption = docx_cap_space
+                space_above_image = 0
+                space_below_image = docx_padding_v
+                docx_cap_keep_w_next = "<w:keepNext/>"
+                docx_img_keep_w_next = ""
+                if float then space_above_caption = 0 end
+            end
+        elseif (cap_position == "below") then -- If caption below
+            if #cap_text > 0 then -- If caption
+                -- extra_space_above_caption = 0
+                -- extra_space_below_caption = docx_extra_v_space
+                space_above_image = docx_padding_v
+                space_below_image = 0
+                space_above_caption = docx_cap_space -- Tweak to compensate for extra space added automatically
+                space_below_caption = docx_padding_v
+                docx_cap_keep_w_next = ""
+                docx_img_keep_w_next = "<w:keepNext/>"
+                if float then space_above_image = 0 end
+            end
+        end
+        docx_cap_par_style = '<w:pPr><w:ind w:left="' .. cap_docx_ind_l *
+                                 twips_per_in .. '" w:right = "' ..
+                                 cap_docx_ind_r * twips_per_in .. '" />' ..
+                                 docx_text_align_xml
+        img.attributes.width = inchesToPixels(width_in / columns) - padding_h *
+                                   2 -- Ensure width expressed as pixels
+        -- docx_img_v_space_before = '<w:pPr><w:spacing w:before="' ..
+        -- docx_padding_v + space_below_caption ..
+        -- '" w:beforeAutospacing="0" /></w:pPr>'
+        -- docx_img_v_space_after =
+        -- '<w:pPr><w:spacing w:after="' .. docx_padding_v ..
+        -- '" w:afterAutospacing="0" /></w:pPr>'
+        docx_cap_pre = '<w:keepLines/>' .. docx_cap_keep_w_next ..
+                           '<w:spacing w:before="' .. space_above_caption ..
+                           '" w:after="' .. space_below_caption ..
+                           '" w:beforeAutospacing="0" />'
+        print("docx_cap_pre: " .. docx_cap_pre)
+        -- docx_cap_v_space_after =
+        --     '<w:keepNext/><w:keepLines/><w:spacing w:after="' ..
+        --         space_below_caption .. '" w:before="' .. 0 ..
+        --         '" w:afterAutospacing="0" />'
+        -- docx_img_pre = '<w:bookmarkStart w:id="0" w:name="' .. img_label ..
+        --               '"/><w:bookmarkEnd w:id="0"/><w:pPr><w:spacing w:before="' ..
+        --               docx_padding_v .. '" w:after="' .. docx_padding_v ..
+        --               '" /><w:jc w:val="' .. frame_pos .. '"/></w:pPr>'
+        docx_img_pre = '<w:bookmarkStart w:id="0" w:name="' .. img_label ..
+                           '"/><w:bookmarkEnd w:id="0"/><w:pPr>' ..
+                           docx_img_keep_w_next .. '<w:spacing w:before="' ..
+                           space_above_image .. '" w:after="' ..
+                           space_below_image .. '" /><w:jc w:val="' .. frame_pos ..
+                           '"/></w:pPr>'
+        docx_new_par = '</w:p><w:p>'
+        if not float then -- If caption not floated 
             if (cap_position == "above") then -- If caption above
                 if #cap_text > 0 then -- If caption
-                    results_cap = frame_v_space_before .. frame_v_space_after ..
-                                      docx_cap_par_style .. par_v_space_after ..
+                    results_cap = docx_cap_par_style .. docx_cap_pre ..
                                       '</w:pPr><w:r>' .. cap_text_docx_style ..
                                       cap_label_docx_style .. '<w:t>' .. cap_lbl ..
                                       label_sep1 .. '</w:t></w:r><w:r>' ..
                                       cap_text_docx_style ..
                                       '<w:t xml:space="preserve">' .. label_sep2 ..
-                                      cap_text .. '</w:t></w:r></w:p><w:p>' ..
-                                      frame_v_space_before
-
+                                      cap_text .. '</w:t></w:r>' .. docx_new_par
                 else
                     results_cap = ""
                 end
                 results = {
-                    pandoc.RawInline('openxml', results_cap .. img_pre), img
+                    pandoc.RawInline('openxml', results_cap .. docx_img_pre),
+                    img
                 }
-
             else -- Caption below
                 if #cap_text > 0 then -- If caption
-                    results_cap = docx_cap_par_style .. par_v_space_after ..
+                    results_cap = docx_cap_par_style .. docx_cap_pre ..
                                       '</w:pPr>><w:r>' .. cap_text_docx_style ..
                                       cap_label_docx_style .. '<w:t>' .. cap_lbl ..
                                       label_sep1 .. '</w:t></w:r><w:r>' ..
                                       cap_text_docx_style ..
                                       '<w:t xml:space="preserve">' .. label_sep2 ..
-                                      cap_text .. '</w:t></w:r>' ..
-                                      frame_v_space_after
+                                      cap_text .. '</w:t></w:r>'
                 else
                     results_cap = ""
                 end
                 results = {
-                    pandoc.RawInline('openxml', img_pre), img,
-                    pandoc.RawInline('openxml', img_post .. results_cap)
+                    pandoc.RawInline('openxml', docx_img_pre), img,
+                    pandoc.RawInline('openxml', docx_new_par .. results_cap)
                 }
 
             end
         else -- If caption floated
             results_pre = '<w:pPr><w:framePr w:w="' ..
-                              tostring(inchesToTwips(width_in - padding_h)) ..
+                -- tostring(inchesToTwips(width_in - padding_h)) ..
+                              tostring(inchesToTwips(width_in)) ..
                               '" w:hSpace="' .. docx_padding_h .. '" w:vSpace="' ..
                               docx_padding_v .. '" w:wrap="' .. docx_wrap ..
                               '" w:vAnchor="text" w:hAnchor="margin" w:xAlign="' ..
-                              docx_align_x .. '" w:y="' .. inchesToTwips(0.1) ..
+                              frame_pos .. '" w:y="' .. inchesToTwips(0.1) ..
                               '"/><w:spacing w:before="0" w:after="0"/>' ..
-                              docx_align_x_xml .. '</w:pPr>'
+                              docx_text_align_xml .. '</w:pPr>'
             if (cap_position == "above") then
                 if #cap_text > 0 then -- If caption
-                    results_cap = docx_cap_par_style .. par_v_space_after ..
+                    results_cap = docx_cap_par_style .. docx_cap_pre ..
                                       '</w:pPr><w:r>' .. er_msg .. '</w:r><w:r>' ..
                                       cap_text_docx_style ..
                                       cap_label_docx_style .. '<w:t>' .. cap_lbl ..
@@ -1020,7 +1060,7 @@ function Image(img)
 
             elseif (cap_position == "below") then
                 if #cap_text > 0 then -- If caption
-                    results_cap = docx_cap_par_style .. par_v_space_before ..
+                    results_cap = docx_cap_par_style .. docx_cap_pre ..
                                       '</w:pPr><w:r>' .. er_msg .. '</w:r><w:r>' ..
                                       cap_text_docx_style ..
                                       cap_label_docx_style .. '<w:t>' .. cap_lbl ..
@@ -1032,9 +1072,6 @@ function Image(img)
                     results_cap = ""
                 end
                 results = {
-                    -- pandoc.RawInline('openxml', results_pre .. img_docx),
-                    -- pandoc.RawInline('openxml', '</w:p><w:p>' .. results_pre ..
-                    --                      results_cap)
                     pandoc.RawInline('openxml', results_pre), img,
                     pandoc.RawInline('openxml', '</w:p><w:p>' .. results_pre ..
                                          results_cap)
@@ -1072,7 +1109,6 @@ function recordParam(name, value, level, overrides)
                 doctyp = ""
                 doc_specific = false
             end
-            -- print("Doc type for param: " .. doctyp)
         end
         if (doc_specific == true and doctyp == doctype) then
             table.insert(overrides, {nam, value})
@@ -1081,7 +1117,6 @@ function recordParam(name, value, level, overrides)
         nam = name
         doc_specific = false
     end
-    -- print("Examining: " .. nam .. " with value of " .. value)
     if verify_entry(nam, valid_attr_names) == false then
         err = err .. "Bad attribute name ('" .. name .. "') " ..
                   id_source(level)
@@ -1204,16 +1239,16 @@ function dimToInchesInteger(val) -- Convert any dimension value into inches inte
 end
 
 function dimToInches(val) -- Convert any dimension value into inches
+    -- print("DIMTOINCHES got val: " .. tostring(val))
     local i
     local j
     local val_dim
     local err = ""
-    -- print("DIMTOINCHES: " .. val)
     i, j = string.find(val, "[%d%.]+") -- Get number
     if i ~= nil then -- If number specified
         val_num = string.sub(val, i, j)
         if string.find(val, "%%") then -- If expressed in percentage
-            val_in = tonumber(val_num) / 100 * text_width
+            val_in = tonumber(val_num) / 100 * pg_text_width
             val_dim = "%"
         else
             i, j = string.find(val, "[%a]+") -- Get dimension
@@ -1242,6 +1277,12 @@ function dimToInches(val) -- Convert any dimension value into inches
         err = "No value ('" .. val .. "') specified "
     end
     return val_in, err
+end
+
+-- Get docx vertical padding, to which supplied value is added
+function get_docx_padding_v(val)
+    if val ~ nil then val = 0 end
+    return (docx_padding_v + val) * twips_per_in
 end
 
 -- Define filter with sequence
