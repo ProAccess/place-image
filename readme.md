@@ -37,7 +37,8 @@ This filter allows you to specify these parameters:
 -   cap_label_sep – If specified, indicates separater between caption
     label number and caption, e.g., “: ”
 -   pdf_adjust_lines – Used to compensate for inaccurate wraps in Pandoc
-    conversions to pdf and latex formats.
+    conversions to pdf and latex formats. It has no effect on other
+    formats.
 
 This filter lets you specify display of images in two ways: (1) for each
 image and (2) for all images, globally.
@@ -322,7 +323,7 @@ doc format, while it will appear at 40% width for any other doc format.
 Alternatively, you may elect not to float the image in a pdf/latex doc
 with the position parameter like this:
 
-`![My caption](my-image.jpg){position=center width=40% cap_label="My Figure"}`
+`![My caption](my-image.jpg){position=float-right pdf:position=center width=40% cap_label="My Figure"}`
 
 Note, in this case we are not *floating* the image so the
 `pdf_adjust_lines` parameter is not needed.
