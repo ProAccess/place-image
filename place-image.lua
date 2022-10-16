@@ -145,8 +145,10 @@ local cap_ltx_text_alignment = { -- Caption text alignment
     ["right"] = '\\raggedleft'
 }
 local ltx_cap_text_styles = { -- Text style latex/PDF codes
-    ["plain"] = "\\textrm{X}",
-    ["normal"] = "\\textrm{X}",
+    -- ["plain"] = "\\textrm{X}",
+    -- ["normal"] = "\\textrm{X}",
+    ["plain"] = "{X}",
+    ["normal"] = "{X}",
     ["italic"] = '\\textit{X}',
     ["bold"] = '\\textbf{X}',
     ["oblique"] = '\\textit{X}',
@@ -735,9 +737,9 @@ function Image(img)
         else
             wid_frac = dimToInches(wd) / pg_text_width -- MODIFY TO ACTUAL PAGE WIDTH
         end
-        print("PAGE WIDTH for pdf: " .. page_width .. "; pg_text_width: " ..
-                  pg_text_width .. "; image wd: " .. wd .. "; wid_frac: " ..
-                  wid_frac .. "; dimToInches(wd): " .. dimToInches(wd))
+        -- print("PAGE WIDTH for pdf: " .. page_width .. "; pg_text_width: " ..
+        --           pg_text_width .. "; image wd: " .. wd .. "; wid_frac: " ..
+        --           wid_frac .. "; dimToInches(wd): " .. dimToInches(wd))
         if pdf_adjust_lines ~= nil then -- If wrap lines adjustment specified
             ltx_adjust_lns = "[" .. pdf_adjust_lines .. "]" -- Compose code for it
         else
@@ -758,9 +760,9 @@ function Image(img)
         }
         ltx_position = ltx_positions[frame_position][1]
         ltx_cap_h_pos = ltx_positions[frame_position][2]
-        print(
-            "ltx_position: " .. ltx_position .. "; ltx_pos: " .. ltx_cap_h_pos ..
-                "; frame_position: " .. frame_position)
+        -- print(
+        --     "ltx_position: " .. ltx_position .. "; ltx_pos: " .. ltx_cap_h_pos ..
+        --         "; frame_position: " .. frame_position)
         if #cap_text > 0 then -- If caption
             cap_txt = caption_ltx_style .. string.gsub(cap_text_ltx_style, "X",
                                                        string.gsub(
@@ -796,16 +798,33 @@ function Image(img)
                       "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
 
             cap_txt = "{" .. cap_txt .. "}"
-            if (cap_position == "above") then
-                cap_pdg_above = padding_v
-                cap_pdg_below = cap_space
-                lnbr_above = ""
-                lnbr_below = "\\linebreak"
-            else
-                cap_pdg_above = cap_space
-                cap_pdg_below = padding_v
+            cap_pdg_above = 0;
+            cap_pdg_below = 0
+
+            if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
+                if (cap_position == "above") then
+                    cap_pdg_above = padding_v -- If not floated, insert space above and below
+                    cap_pdg_below = cap_space
+                    lnbr_above = ""
+                    lnbr_below = "\\linebreak"
+                else -- caption is below
+                    cap_pdg_above = cap_space
+                    -- cap_pdg_below = padding_v
+                    lnbr_above = "\\linebreak"
+                    lnbr_below = ""
+                end
+                frame_compensation = "0in"
+            else -- if for floated 'wrapfigure'
+                if (cap_position == "above") then
+                    cap_pdg_above = 0
+                    cap_pdg_below = cap_space
+                else
+                    cap_pdg_above = cap_space
+                    cap_pdg_below = 0
+                end
                 lnbr_above = "\\linebreak"
                 lnbr_below = ""
+                frame_compensation = "-.3in"
             end
 
             cap_row = '\\vspace{' .. cap_pdg_above .. 'in}' .. lnbr_above ..
@@ -840,8 +859,8 @@ function Image(img)
             results = frame_assembly
         else -- if for 'wrapfigure'
             fig_open = string.gsub(ltx_position, "X", wid_frac) -- Insert width if wrapfigure
-            results = fig_open .. "\\vspace{-0.17in}" .. frame_assembly ..
-                          "\\end" .. latex_figure_type
+            results = fig_open .. "\\vspace{" .. frame_compensation .. "}" ..
+                          frame_assembly .. "\\end" .. latex_figure_type
         end
 
         -- *************************************************************************
