@@ -1,5 +1,6 @@
+<div id='fig_1' style='float:right; margin-right:0px; margin-left:auto; padding: 14.4px 0px 14.4px 14.4px ; width:25%; '><img src='./images-md/Logo%20page.png' width='100%'/></div>
 
-# A solution for enhanced image control
+# A solution for enhanced image & caption control
 
 The *image-placement.lua* Pandoc filter is intended to address some
 commonly encountered shortcomings when displaying images in documents
@@ -7,7 +8,7 @@ created by Pandoc from markdown documents. Now you can specify a variety
 of image parameters directly within markdown images statements. Here are
 two brief examples:
 
-<img src="./images-md/examples.png" style="width:100.0%" />
+<div id='fig_2' style='margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:100%; '><img src='./images-md/examples.png' width='100%'/></div>
 
 This filter allows you to specify these parameters:
 
@@ -43,7 +44,7 @@ This filter allows you to specify these parameters:
 This filter lets you specify display of images in two ways: (1) for each
 image and (2) for all images, globally.
 
-### You can specify params for each specific image
+### You can specify params for each [specific image](#image_specific)
 
 Each markdown image statement can include desired parameters. For
 example, you can specify an image width, its caption label and caption
@@ -60,8 +61,6 @@ You can affect all images within a global
 the top of the markdown document, e.g.,
 
 `imageplacement: width=2.5in, cap_label="My Figure", cap_position=above`
-
-<a name="format_specific"></a>
 
 ### You can even specify different image params for different document types
 
@@ -81,7 +80,7 @@ Supported document format identifiers include the following:
 -   latex:
 -   epub:
 
-<a name="global_params"></a>
+<a name="image_specific"></a>
 
 ## Parameters for a specific image
 
@@ -263,8 +262,9 @@ Pandoc conversion into latex/pdf documents:
 
 There are some known issues when floating images (with text wrap) for
 pdf and latex documents that may elicit every disease known to medical
-science. Ensure you review the caveats and hints below if you plan to
-output to pdf/latex.
+science. Factors such as image location, caption length and proximity to
+a table can cause problems. Ensure you review the caveats and hints
+below if you plan to output to pdf/latex.
 
 ### Avoiding issues
 

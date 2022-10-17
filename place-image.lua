@@ -1,4 +1,4 @@
---[[  -- George Markle 22/10/05
+--[[  -- George Markle - 22/10/17
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -157,7 +157,7 @@ local ltx_cap_text_styles = { -- Text style latex/PDF codes
 }
 
 -- local doc_specific_i = 4 -- 'Document-type-specific' column of image params table
-local doctypes = {"html", "epub", "docx", "pdf", "latex"}
+local doctypes = {"html", "epub", "docx", "pdf", "latex", "gfm", "markdown"}
 local doctype_overrides -- Will contain any document-type-specific overrides
 local doctype = string.match(FORMAT, "[%a]+")
 print("Format: " .. doctype)
@@ -262,7 +262,7 @@ function Meta(meta)
         local glParStr = stringify(meta.imageplacement)
         glParStr = string.gsub(glParStr, "“", '"') -- Clean of any Pandoc open quotes that disables standard expressions
         glParStr = string.gsub(glParStr, "”", '"') -- Clean of any Pandoc open quotes that disable standard expressions
-        print("Processing globals: " .. glParStr)
+        -- print("Processing globals: " .. glParStr)
         repeat -- Gather any meta-specified global image parameters
             i, j = string.find(glParStr, "[%a%:%_]+%s*=", ptr) -- Look for param name
             if i == nil then
@@ -367,13 +367,13 @@ function Image(img)
         doctype_override(this_i, doctype_overrides) -- Override any param for which doc-type constraint indicated
     end
 
-    ptr = 1 -- Init counter
-    repeat -- Print complete table
-        v = valid_attr_names[ptr] -- Get next name from table of valid parameters
-        print("image_param", v, image_params[v][default_i],
-              image_params[v][global_i], image_params[v][this_i])
-        ptr = ptr + 1
-    until ptr > #valid_attr_names
+    -- ptr = 1 -- Init counter
+    -- repeat -- Print complete table
+    --     v = valid_attr_names[ptr] -- Get next name from table of valid parameters
+    --     print("image_param", v, image_params[v][default_i],
+    --           image_params[v][global_i], image_params[v][this_i])
+    --     ptr = ptr + 1
+    -- until ptr > #valid_attr_names
 
     -- Get any label embedded in caption
     i, j = string.find(tostring(img.caption[#img.caption]), "label{.+}")
@@ -401,7 +401,7 @@ function Image(img)
     if verify_entry(val,
                     {"left", "center", "right", "float-left", "float-right"}) then
         frame_position = val
-        print("Verified position as: " .. frame_position .. " for file " .. src)
+        -- print("Verified position as: " .. frame_position .. " for file " .. src)
     else
         frame_position = image_params["position"][default_i]
         err_msg = err_msg .. "Bad position ('" .. val .. "')" .. source
@@ -414,7 +414,7 @@ function Image(img)
     end
 
     val, par_source = getParam("columns") -- Width divisor for adjusting image width   
-    print("val: " .. val .. "; tonumber(val): " .. tonumber(val) .. "; ")
+    -- print("val: " .. val .. "; tonumber(val): " .. tonumber(val) .. "; ")
     if val ~= nil then
         if tonumber(val) >= 1 and tonumber(val) <= 20 then
             columns = math.floor(tonumber(val))
@@ -464,7 +464,6 @@ function Image(img)
     cap_wid_as_prcent = tonumber(string.sub(val, i, j)) / 100 -- Get cap width as percentage
     cap_width_in = cap_wid_as_prcent * width_in
     cap_html_style = cap_html_style .. "width:" .. cap_width .. "; "
-    print("Width of: " .. cap_width_in)
 
     val, par_source = getParam("cap_space") -- Space between caption and image
     cap_space, err = dimToInches(val)
@@ -605,7 +604,7 @@ function Image(img)
     else
         cap_label_sep = ""
     end
-    print("Just retrieved cap_label_sep of: " .. cap_label_sep)
+    -- print("Just retrieved cap_label_sep of: " .. cap_label_sep)
 
     val, par_source = getParam("pdf_adjust_lines") -- Latex/PDF imgage wrap height adjust - A text-wrapped Latex/PDF image sometimes will have an extended wrap area at the bottom. In such cases, this provides for an 'adjustment' value to shorten/lengthen wrap area. 
     pdf_adjust_lines = val
@@ -620,6 +619,8 @@ function Image(img)
             pdf_adjust_lines = tonumber(pdf_adjust_lines)
         end
     end
+
+    -- cap_text = "FORMAT: " .. FORMAT .. "; " .. cap_text
 
     -- **************************************************************************************************
     -- All entered values have been gathered. Now we process values and prep for output.
@@ -656,7 +657,7 @@ function Image(img)
 
     if cap_label ~= nil and cap_label ~= "" then -- If figure type label specified, e.g., 'Figure', then compose numbered caption label
         cap_label_sep = string.gsub(cap_label_sep, "_", " ") -- Enables space char in separator entered as "\_"
-        print("Examining cap_label_sep: " .. cap_label_sep)
+        -- print("Examining cap_label_sep: " .. cap_label_sep)
         cap_lbl =
             getParam("cap_label") .. " " .. -- Compose numbered caption label
             cap_labels[getParam("cap_label")] -- Yes, so record
@@ -684,7 +685,8 @@ function Image(img)
 
     -- *************************************************************************
     -- HTML/Epub documents prep
-    if (FORMAT:match "html" or FORMAT:match "epub") then -- For html documents
+    if (FORMAT:match "html" or FORMAT:match "epub" or FORMAT:match "gfm" or
+        FORMAT:match "mark.*") then -- For html for markdown documents
         html_style = html_style .. "width:" .. width_entered .. "; " -- Add width to html style
         if (cap_position == "above") then
             if #cap_text > 0 then
@@ -763,6 +765,54 @@ function Image(img)
         -- print(
         --     "ltx_position: " .. ltx_position .. "; ltx_pos: " .. ltx_cap_h_pos ..
         --         "; frame_position: " .. frame_position)
+        if latex_figure_type == "{figure}" or columns > 1 then -- if for unfloated 'figure' or image within table
+            graphic_pos = ", " .. frame_position
+            graphic_siz_frac = wid_frac
+        else -- if for 'wrapfigure'
+            graphic_pos = ""
+            graphic_siz_frac = 1.0
+        end
+        if cap_h_position == "left" then
+            ltx_cap_l_wd = 0
+            ltx_cap_r_wd = 0
+        elseif cap_h_position == "right" then
+            ltx_cap_l_wd = 1 - cap_wid_as_prcent
+            ltx_cap_r_wd = 0
+        else
+            ltx_cap_l_wd = 0.5 - cap_wid_as_prcent / 2
+            ltx_cap_r_wd = 0
+        end
+        print(
+            "GRAPHICS - ltx_cap_l_wd: " .. ltx_cap_l_wd .. "; ltx_cap_r_wd: " ..
+                ltx_cap_r_wd .. "; graphic_siz_frac: " .. graphic_siz_frac ..
+                "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
+        i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
+        latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
+        if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
+            if (cap_position == "above") then
+                cap_pdg_above = padding_v -- If not floated, insert space above and below
+                cap_pdg_below = cap_space
+                lnbr_above = ""
+                lnbr_below = "\\linebreak"
+            else -- caption is below
+                cap_pdg_above = cap_space
+                -- cap_pdg_below = padding_v
+                lnbr_above = "\\linebreak"
+                lnbr_below = ""
+            end
+            frame_compensation = "0in"
+        else -- if for floated 'wrapfigure'
+            if (cap_position == "above") then
+                cap_pdg_above = 0
+                cap_pdg_below = cap_space
+            else
+                cap_pdg_above = cap_space
+                cap_pdg_below = 0
+            end
+            lnbr_above = "\\linebreak"
+            lnbr_below = ""
+            frame_compensation = "-.3in"
+        end
         if #cap_text > 0 then -- If caption
             cap_txt = caption_ltx_style .. string.gsub(cap_text_ltx_style, "X",
                                                        string.gsub(
@@ -772,60 +822,9 @@ function Image(img)
                                                            label_sep2 ..
                                                            cap_text) -- Include any style attributes
 
-            i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
-            latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
-
-            if latex_figure_type == "{figure}" or columns > 1 then -- if for 'figure' or image within table
-                graphic_pos = ", " .. frame_position
-                graphic_siz_frac = wid_frac
-            else -- if for 'wrapfigure'
-                graphic_pos = ""
-                graphic_siz_frac = 1.0
-            end
-            if cap_h_position == "left" then
-                ltx_cap_l_wd = 0
-                ltx_cap_r_wd = 0
-            elseif cap_h_position == "right" then
-                ltx_cap_l_wd = 1 - cap_wid_as_prcent
-                ltx_cap_r_wd = 0
-            else
-                ltx_cap_l_wd = 0.5 - cap_wid_as_prcent / 2
-                ltx_cap_r_wd = 0
-            end
-            print("GRAPHICS - ltx_cap_l_wd: " .. ltx_cap_l_wd ..
-                      "; ltx_cap_r_wd: " .. ltx_cap_r_wd ..
-                      "; graphic_siz_frac: " .. graphic_siz_frac ..
-                      "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
-
             cap_txt = "{" .. cap_txt .. "}"
             cap_pdg_above = 0;
             cap_pdg_below = 0
-
-            if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
-                if (cap_position == "above") then
-                    cap_pdg_above = padding_v -- If not floated, insert space above and below
-                    cap_pdg_below = cap_space
-                    lnbr_above = ""
-                    lnbr_below = "\\linebreak"
-                else -- caption is below
-                    cap_pdg_above = cap_space
-                    -- cap_pdg_below = padding_v
-                    lnbr_above = "\\linebreak"
-                    lnbr_below = ""
-                end
-                frame_compensation = "0in"
-            else -- if for floated 'wrapfigure'
-                if (cap_position == "above") then
-                    cap_pdg_above = 0
-                    cap_pdg_below = cap_space
-                else
-                    cap_pdg_above = cap_space
-                    cap_pdg_below = 0
-                end
-                lnbr_above = "\\linebreak"
-                lnbr_below = ""
-                frame_compensation = "-.3in"
-            end
 
             cap_row = '\\vspace{' .. cap_pdg_above .. 'in}' .. lnbr_above ..
                           '\\begin{minipage}{' .. ltx_cap_l_wd ..
@@ -896,12 +895,12 @@ function Image(img)
             cap_docx_ind_l = docx_img_frame_wd - cap_width_in / columns
             cap_docx_ind_r = 0
         end
-        print("width_in: " .. width_in .. "; docx_img_frame_wd: " ..
-                  docx_img_frame_wd .. "; pos_center: " .. pos_center ..
-                  "; frame_position: " .. frame_position .. "; cap_docx_ind_l: " ..
-                  cap_docx_ind_l .. "; cap_docx_ind_r: " .. cap_docx_ind_r ..
-                  "; cap_h_position: " .. cap_h_position .. "; frame_pos: " ..
-                  frame_pos)
+        -- print("width_in: " .. width_in .. "; docx_img_frame_wd: " ..
+        --           docx_img_frame_wd .. "; pos_center: " .. pos_center ..
+        --           "; frame_position: " .. frame_position .. "; cap_docx_ind_l: " ..
+        --           cap_docx_ind_l .. "; cap_docx_ind_r: " .. cap_docx_ind_r ..
+        --           "; cap_h_position: " .. cap_h_position .. "; frame_pos: " ..
+        --           frame_pos)
         if #cap_text_docx_style > 0 then -- If specifying caption format then
             cap_text_docx_style = "<w:rPr>" .. cap_text_docx_style .. '</w:rPr>'
         else
@@ -916,15 +915,23 @@ function Image(img)
     end -- End if
 
     -- *************************************************************************
-    -- HTML/Epub doc format COMPOSITION
-    if (FORMAT:match "html" or FORMAT:match "epub") then
-        print("Writing html image")
+    -- HTML/Epub/markdown doc format COMPOSITION
+    if (FORMAT:match "html" or FORMAT:match "epub" or FORMAT:match "gfm") or
+        FORMAT:match "mark.*" then
         if (#err_msg > 1) then
             results = "<span style='color:red'>ERROR IN IMAGE INFORMATION - " ..
                           err_msg .. "</span>\n\n" .. results
             print("\nEncountered error: " .. err_msg .. "\n")
+        elseif FORMAT:match "html" or FORMAT:match "epub" then
+            print("Writing html image")
+            return pandoc.RawInline('html', results) -- html or epub
+        elseif FORMAT:match "gfm" then
+            print("Writing gfm image")
+            return pandoc.RawInline('gfm', results) -- gfm (github flavored markdown)
+        elseif FORMAT:match "mark.*" then
+            print("Writing markdown image")
+            return pandoc.RawInline('markdown', results) -- markdown
         end
-        return pandoc.RawInline('html', results)
 
         -- *************************************************************************
         -- Latex/PDF doc format COMPOSITION
