@@ -1,4 +1,5 @@
-<div id='fig_1' style='float:right; margin-right:0px; margin-left:auto; padding: 14.4px 0px 14.4px 14.4px ; width:25%; '><img src='./images-md/Logo%20page.png' width='100%'/></div>
+<img src="./images-md/Logo%20page.png" data-position="float-right"
+style="width:25.0%" />
 
 # A solution for enhanced image & caption control
 
@@ -8,7 +9,7 @@ created by Pandoc from markdown documents. Now you can specify a variety
 of image parameters directly within markdown images statements. Here are
 two brief examples:
 
-<div id='fig_2' style='margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:100%; '><img src='./images-md/examples.png' width='100%'/></div>
+<img src="./images-md/examples.png" style="width:100.0%" />
 
 This filter allows you to specify these parameters:
 
