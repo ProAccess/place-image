@@ -1,6 +1,3 @@
-<img src="./images-md/Logo%20page.png" data-position="float-right"
-style="width:25.0%" />
-
 # A solution for enhanced image & caption control
 
 The *image-placement.lua* Pandoc filter is intended to address some
