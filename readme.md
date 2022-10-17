@@ -163,11 +163,11 @@ Currently this filter supports Pandoc converson of markdown documents to
 -   html
 -   docx
 -   pdf — The ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’
-    package is required for text-wrap. See [Using
-    wrapfig](#using-wrapfig), below.
+    package is required for text-wrap. (For using with pdf/latex docs,
+    see [Using wrapfig](#using-wrapfig), below.)
 -   latex — The ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’
-    package is required for text-wrap. See [Using
-    wrapfig](#using-wrapfig), below.
+    package is required for text-wrap. (For using with pdf/latex docs,
+    see [Using wrapfig](#using-wrapfig), below.)
 -   epub
 
 <a name="commands-table"></a>
@@ -233,6 +233,8 @@ output:
 ---
 </code></pre>
 
+<a name="using-wrapfig"></a>
+
 # Special considerations for floated images in latex/pdf documents
 
 ## Include these packages
@@ -253,8 +255,6 @@ Pandoc conversion into latex/pdf documents:
 -   eisvogel.latex - The latex template by Pascal Wagler, based upon
     template by Pandoc author John MacFarlane. This is the latex
     template I prefer for its expanded capabilities.
-
-<a name="using-wrapfig"></a>
 
 ## Image wrapping issues in latex/pdf documents
 
