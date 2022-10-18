@@ -1,4 +1,4 @@
---[[  -- George Markle - 22/10/17
+--[[  -- George Markle - 22/10/18
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -503,11 +503,6 @@ function Image(img)
     val, par_source = getParam("cap_text_align") -- Caption text align
     if verify_entry(val, {"left", "center", "right"}) then
         cap_text_align = val
-        -- cap_html_style = cap_html_style .. "text-align:" .. cap_text_align ..
-        --                      "; "
-        -- docx_text_align_xml = '<w:jc w:val="' .. cap_text_align .. '" />'
-        -- caption_ltx_style = caption_ltx_style ..
-        --                         cap_ltx_text_alignment[cap_text_align]
     else
         cap_text_align = image_params["cap_text_align"][default_i]
         err_msg = err_msg .. "Bad caption text alignment value ('" .. val ..
@@ -765,6 +760,8 @@ function Image(img)
         -- print(
         --     "ltx_position: " .. ltx_position .. "; ltx_pos: " .. ltx_cap_h_pos ..
         --         "; frame_position: " .. frame_position)
+        i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
+        latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
         if latex_figure_type == "{figure}" or columns > 1 then -- if for unfloated 'figure' or image within table
             graphic_pos = ", " .. frame_position
             graphic_siz_frac = wid_frac
@@ -782,13 +779,12 @@ function Image(img)
             ltx_cap_l_wd = 0.5 - cap_wid_as_prcent / 2
             ltx_cap_r_wd = 0
         end
-        print(
-            "GRAPHICS - ltx_cap_l_wd: " .. ltx_cap_l_wd .. "; ltx_cap_r_wd: " ..
-                ltx_cap_r_wd .. "; graphic_siz_frac: " .. graphic_siz_frac ..
-                "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
-        i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
-        latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
+        -- print(
+        --     "GRAPHICS - ltx_cap_l_wd: " .. ltx_cap_l_wd .. "; ltx_cap_r_wd: " ..
+        --         ltx_cap_r_wd .. "; graphic_siz_frac: " .. graphic_siz_frac ..
+        --         "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
+            frame_compensation = 0
             if (cap_position == "above") then
                 cap_pdg_above = padding_v -- If not floated, insert space above and below
                 cap_pdg_below = cap_space
@@ -800,18 +796,17 @@ function Image(img)
                 lnbr_above = "\\linebreak"
                 lnbr_below = ""
             end
-            frame_compensation = "0in"
         else -- if for floated 'wrapfigure'
+            frame_compensation = -.3
             if (cap_position == "above") then
-                cap_pdg_above = 0
+                cap_pdg_above = frame_compensation
                 cap_pdg_below = cap_space
             else
                 cap_pdg_above = cap_space
-                cap_pdg_below = 0
+                cap_pdg_below = frame_compensation
             end
             lnbr_above = "\\linebreak"
             lnbr_below = ""
-            frame_compensation = "-.3in"
         end
         if #cap_text > 0 then -- If caption
             cap_txt = caption_ltx_style .. string.gsub(cap_text_ltx_style, "X",
@@ -823,8 +818,6 @@ function Image(img)
                                                            cap_text) -- Include any style attributes
 
             cap_txt = "{" .. cap_txt .. "}"
-            cap_pdg_above = 0;
-            cap_pdg_below = 0
 
             cap_row = '\\vspace{' .. cap_pdg_above .. 'in}' .. lnbr_above ..
                           '\\begin{minipage}{' .. ltx_cap_l_wd ..
@@ -852,13 +845,15 @@ function Image(img)
                     "\\linewidth" .. graphic_pos .. "]{" .. src .. "}" ..
                     cap_row .. "\\end{minipage}\n\\end{" .. ltx_cap_h_pos .. "}"
         end
-
-        -- if latex_figure_type == "{figure}" then -- if for 'figure'
+        -- print("latex_figure_type: " .. latex_figure_type .. "; width_in: " ..
+        --           width_in .. "; graphic_siz_frac: " .. graphic_siz_frac ..
+        --           "; wid_frac: " .. wid_frac .. "\nframe_assembly: " ..
+        --           frame_assembly)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
             results = frame_assembly
         else -- if for 'wrapfigure'
             fig_open = string.gsub(ltx_position, "X", wid_frac) -- Insert width if wrapfigure
-            results = fig_open .. "\\vspace{" .. frame_compensation .. "}" ..
+            results = fig_open .. "\\vspace{" .. frame_compensation .. "in}" ..
                           frame_assembly .. "\\end" .. latex_figure_type
         end
 
