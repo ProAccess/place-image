@@ -220,7 +220,7 @@ It is assumed the user already has installed Pandoc. If not, information
 is provided [here](https://pandoc.org/installing.html).
 
 You should place your markdown document in a folder along with the
-lplace-image.lua pandoc filter and supporting folders.
+place-image.lua pandoc filter and supporting folders.
 
 <figure>
 <img src="./images-md/files-organization.png" data-cap_position="above"
