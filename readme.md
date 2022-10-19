@@ -202,7 +202,7 @@ You may enter parameters in any order, for example:
 | cap_space          | Space between caption and image                                                                                                                                                                                                                                                                                                                                                                                                    | 0.15in  | Example: cap_space=0.12in                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | cap_position       | Caption vertical position relative to image                                                                                                                                                                                                                                                                                                                                                                                        | above   | Options: above, below<br/>Example: cap_position=below                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | cap_h\_position    | Caption horizontal alignment relative to image (caption itself may only be above or below)                                                                                                                                                                                                                                                                                                                                         | center  | Options: left, center, right<br/>Example: cap_h\_position=left                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| cap_text_align     | Caption text alignment                                                                                                                                                                                                                                                                                                                                                                                                             | center  | Options: left, center, right<br/>Example: cap_text_align=left                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| cap_text_align     | Caption text alignment                                                                                                                                                                                                                                                                                                                                                                                                             | left    | Options: left, center, right<br/>Example: cap_text_align=left                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | cap_text_size      | Allows tweak of caption text size relative to body text                                                                                                                                                                                                                                                                                                                                                                            | small   | Options: small, normal, large<br/>Example: cap_text_size=normal                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | cap_text_font      | If specified, font must be a registered system font; use sparingly                                                                                                                                                                                                                                                                                                                                                                 |         | Options may include any system font.<br/>Examples: cap_text_font=Helvetica, cap_text_font=Arial, cap_text_font=Times, etc.                                                                                                                                                                                                                                                                                                                                                        |
 | cap_text_style     | Caption text style                                                                                                                                                                                                                                                                                                                                                                                                                 | plain   | plain, italic, bold, oblique, bold-oblique                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -213,6 +213,22 @@ You may enter parameters in any order, for example:
 
 Values should be a number followed immediately by one of “in”, “cm”,
 “mm” or “px”
+
+# Setting up to use
+
+It is assumed the user already has installed Pandoc. If not, information
+is provided [here](https://pandoc.org/installing.html).
+
+You should place your markdown document in a folder along with the
+lplace-image.lua pandoc filter and supporting folders.
+
+<figure>
+<img src="./images-md/files-organization.png" data-cap_position="above"
+data-cap_text_align="center" style="width:80.0%"
+alt="This illustrates how your files should be organized." />
+<figcaption aria-hidden="true">This illustrates how your files should be
+organized.</figcaption>
+</figure>
 
 # Invoking filter from Pandoc
 
@@ -233,6 +249,14 @@ output:
 ---
 </code></pre>
 
+<figure>
+<img src="./images-md/happy-face-doc.png" data-cap_position="above"
+data-cap_text_align="center" style="width:60.0%"
+alt="Now you can place and caption your images and illustrations wherever and however you like!" />
+<figcaption aria-hidden="true">Now you can place and caption your images
+and illustrations wherever and however you like!</figcaption>
+</figure>
+
 <a name="using-wrapfig"></a>
 
 # Special considerations for floated images in latex/pdf documents
@@ -240,9 +264,9 @@ output:
 ## Include these packages
 
 For Pandoc conversion into Latex and pdf, these three package statements
-should be included in the latex template file. (They already are in the
-“default.latex” and “eisvogel.latex” templates in the “templates” folder
-on this site.)
+should be included in the latex template file. (For your convenience,
+they already are in the “default.latex” and “eisvogel.latex” templates
+in the “templates” folder on this site.)
 
 `\usepackage{layouts} % allows calculating width relative to latex/pdf page width   \usepackage{wrapfig} % enables text wrap-around of figures   \usepackage[export]{adjustbox}  % must include to enable additional positioning`
 
@@ -286,8 +310,8 @@ cause overlap with another image; Armageddon may follow.
 There is a known issue with respect to pandoc/wrapfig’s text-wrap
 accuracy. After you’ve generated a latex or pdf document, it’s common to
 find some floated images with extra blank space below the image or the
-image extending into wrapped text below. This is because pandoc
-*guesses* the equivalent number of blank lines needed to match the
+image extending into wrapped text below. This appears to be because
+latex *guesses* the equivalent number of blank lines needed to match the
 height of the image — and sometimes it guesses wrong.
 
 Should this problem occur, you may enter a ‘pdf_adjust_lines’ parameter

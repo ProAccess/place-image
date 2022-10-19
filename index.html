@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="" >
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+          <title>place-image pandoc lua filter adds image flexibility</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+    <script src="README-master_files/header-attrs-2.10/header-attrs.js"></script>
+    <script src="README-master_files/jquery-1.11.3/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="README-master_files/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="README-master_files/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+    <script src="README-master_files/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+    <script src="README-master_files/bootstrap-3.3.5/shim/respond.min.js"></script>
+    <style>h1 {font-size: 34px;}
+           h1.title {font-size: 38px;}
+           h2 {font-size: 30px;}
+           h3 {font-size: 24px;}
+           h4 {font-size: 18px;}
+           h5 {font-size: 16px;}
+           h6 {font-size: 12px;}
+           code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+           pre:not([class]) { background-color: white }</style>
+    <script src="README-master_files/navigation-1.1/tabsets.js"></script>
+      <link rel="stylesheet" href="css-md/mdstyles.css" />
+      <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+      <header id="title-block-header">
+    <h1 class="title">place-image pandoc lua filter adds image
+flexibility</h1>
+                  </header>
+      <div id="a-solution-for-enhanced-image-caption-control"
+      class="section level1">
+      <h1>A solution for enhanced image &amp; caption control</h1>
+      <p>The <em>image-placement.lua</em> Pandoc filter is intended to
+      address some commonly encountered shortcomings when displaying
+      images in documents created by Pandoc from markdown documents. Now
+      you can specify a variety of image parameters directly within
+      markdown images statements. Here are two brief examples:</p>
+      <p><div id='fig_1' style='margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:100%; '><img src='images-md/examples.png' width='100%'/></div></p>
+      <p>This filter allows you to specify these parameters:</p>
+      <ul>
+      <li>width – Image width</li>
+      <li>position – Horizontal position on page (left, center, right,
+      float-left, float-right; floats are text-wrapped.)</li>
+      <li>h_padding, v_padding – Padding between image, caption and
+      surrounding text.</li>
+      <li>cap_width – Width of caption text. If expressed as percent,
+      will be relative to image width.</li>
+      <li>cap_space – Space between caption and image.</li>
+      <li>cap_position – Vertical positon relative to image: above or
+      below. Default is above.</li>
+      <li>cap_h_position – horizontal position of caption block relative
+      to image (left, center, right). Default is center.</li>
+      <li>cap_text_align – If specified: left, center, right</li>
+      <li>cap_text_size – If specified: small, normal, large. Default is
+      normal.</li>
+      <li>cap_text_font – If specified, font must be among system
+      fonts.</li>
+      <li>cap_text_style – If specified: plain, italic, bold,
+      bold-oblique, bold-italic. Default is plain.</li>
+      <li>cap_label – If specified, can be any, e.g., “Figure”, “Photo”,
+      “My Fantastic Table”, etc. Number following label will be
+      respective to the label.</li>
+      <li>cap_label_style – If specified: plain, italic, bold,
+      bold-oblique, bold-italic. Default is plain.</li>
+      <li>cap_label_sep – If specified, indicates separater between
+      caption label number and caption, e.g., “: ”</li>
+      <li>pdf_adjust_lines – Used to compensate for inaccurate wraps in
+      Pandoc conversions to pdf and latex formats. It has no effect on
+      other formats.</li>
+      </ul>
+      <p>This filter lets you specify display of images in two ways: (1)
+      for each image and (2) for all images, globally.</p>
+      <div id="you-can-specify-params-for-each-specific-image"
+      class="section level3">
+      <h3>You can specify params for each <a
+      href="#image_specific">specific image</a></h3>
+      <p>Each markdown image statement can include desired parameters.
+      For example, you can specify an image width, its caption label and
+      caption position like this:</p>
+      <p><code>![My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above}</code></p>
+      <p>A parameter for a specific image will override any global
+      parameter.</p>
+      </div>
+      <div id="or-globally-for-all-images" class="section level3">
+      <h3>… or globally, for <em>all</em> images</h3>
+      <p>You can affect all images within a global “<a
+      href="#global-params">imageplacement</a>” statement in the YAML
+      Meta section at the top of the markdown document, e.g.,</p>
+      <p><code>imageplacement: width=2.5in, cap_label="My Figure", cap_position=above</code></p>
+      </div>
+      <div
+      id="you-can-even-specify-different-image-params-for-different-document-types"
+      class="section level3">
+      <h3>You can even specify different image params for different
+      document types</h3>
+      <p>You can preface any parameter with a document format identifier
+      and that parameter will override any default or other image
+      parameter for that document type. For example, the following will
+      set the image width at 50% of page width for any supported format
+      except pdf and docx images, which will be sized separately:</p>
+      <p><code>![My caption](my-image.jpg){position=float-right width=50% pdf:width=40% docx:width=45%}]</code></p>
+      <p>Supported document format identifiers include the
+      following:</p>
+      <ul>
+      <li>html:</li>
+      <li>docx:</li>
+      <li>pdf:</li>
+      <li>latex:</li>
+      <li>epub:</li>
+      </ul>
+      <p><a name="image_specific"></a></p>
+      </div>
+      <div id="image_specific" class="section level2">
+      <h2>Parameters for a specific image</h2>
+      <p>Parameters in <em>specific image</em> statements must
+      <em>not</em> be separated by commas; doing so will cause Pandoc to
+      throw up in its mouth, with unexpected results. (This contrasts
+      with how global parameters must be separated <em>with</em> commas
+      within the YAML Meta statement. I know, I know — but that’s out of
+      my control.)</p>
+      <p>The following illustrates how to easily size a specific image
+      to 45% of page width, float it to the right with text wrapped
+      around it, and place the caption <em>below</em> (rather than
+      above) the image.</p>
+      <p><code>![My caption](my-image.jpg){width=45% position=float-right cap_position=below}</code></p>
+      <p>These and other available parameters are <a
+      href="#commands-table">listed below</a>.</p>
+      <p><a name="global-params"></a></p>
+      </div>
+      <div id="global-params" class="section level2">
+      <h2>Global parameters applying to <em>all</em> doc images</h2>
+      <p>Note, global parameters must be separated <em>with</em> commas
+      within the global YAML Meta imageplacement statement at the top of
+      the markdown document, for example,</p>
+      <p><code>imageplacement: cap_label="Figure", cap_label_sep=":_"</code></p>
+      <p>Global parameter(s) apply to <em>all</em> images or any
+      parameter not otherwise specified in a specific image statement.
+      For example, you may wish to include a standard label for all
+      images, such as “My Figure 1:” to precede each image caption. You
+      can accomplish this with this ‘imageplacement’ statement in your
+      YAML header:</p>
+      <pre><code>
+      ---
+      title: "Plan for Controlling Weather"
+      <span style="color:#45c">imageplacement: cap_label="My Figure", cap_label_sep=":_"</span>
+      output:
+        html_document:
+          pandoc_args: ["--lua-filter=place-image.lua"]
+          css: "css-md/mdstyles.css"
+          template: "templates/default.html5"
+      params:
+        author: Your Name
+      ---
+      </code></pre>
+      <p>This will cause every image to be preceded by the label “My
+      Figure” followed by a space and sequence number particular to the
+      label. The parameter line</p>
+      <p><code>cap_label_sep=":_"</code></p>
+      <p>will cause a colon and space to separate that from the caption,
+      as in “My Figure 3: This is my caption…”</p>
+      <p>You can cause the label to be bold face by adding the
+      “cap_label_style” parameter, for example,</p>
+      <p><code>imageplacement: cap_label="My Figure", cap_label_sep=":_", cap_label_style=bold</code></p>
+      <p>This would produce a caption like this: “<strong>My Figure
+      3:</strong> This is my caption…”</p>
+      <blockquote>
+      <p>Note 1 — unlike with parameters listed with images, image
+      parameters in the YAML header must be separated by commas, due to
+      the way the Lua language scans the YAML header for parameters;
+      failing to include commas may cause Pandoc to pee on itself,
+      causing a “scan” error and high blood pressure.</p>
+      </blockquote>
+      <blockquote>
+      <p>Note 2 — Note the “cap_label_sep” parameter of “:_”. The
+      underscore character following the colon indicates a space “ ”
+      character. This is because an actual space character in a YAML
+      parameter string also can cause a “scan” error. Therefore, use the
+      “_” underscore character to indicate a space.</p>
+      </blockquote>
+      </div>
+      </div>
+      <div id="document-formats-supported" class="section level1">
+      <h1>Document formats supported</h1>
+      <p>Currently this filter supports Pandoc converson of markdown
+      documents to</p>
+      <ul>
+      <li>html</li>
+      <li>docx</li>
+      <li>pdf — The ‘<a
+      href="https://www.ctan.org/pkg/wrapfig?lang=en">wrapfig</a>’
+      package is required for text-wrap. (For using with pdf/latex docs,
+      see <a href="#using-wrapfig">Using wrapfig</a>, below.)</li>
+      <li>latex — The ‘<a
+      href="https://www.ctan.org/pkg/wrapfig?lang=en">wrapfig</a>’
+      package is required for text-wrap. (For using with pdf/latex docs,
+      see <a href="#using-wrapfig">Using wrapfig</a>, below.)</li>
+      <li>epub</li>
+      </ul>
+      <p><a name="commands-table"></a></p>
+      </div>
+      <div id="commands-table" class="section level1">
+      <h1>Image parameter details</h1>
+      <p>Below is a table of parameters you can include in your markdown
+      image specifier. Wherever a size dimension is required, you can
+      use any of the following dimensions. (Ensure there are no spaces
+      between the number and dimension, e.g., “350px”. “350 px” may
+      produce unexpected results.</p>
+      <ul>
+      <li>% — percentage of parent width</li>
+      <li>in — inches</li>
+      <li>cm — centimeters</li>
+      <li>mm — milimeters</li>
+      <li>px — pixels (at 96 per-inch)</li>
+      </ul>
+      <p>You may enter parameters in any order, for example:</p>
+      <p><code>![My caption](my-image.jpg){position=float-left cap_position=below width=50%}</code>
+       </p>
+      <div id="parameters-you-can-use" class="section level2">
+      <h2>Parameters you can use</h2>
+      <table>
+      <colgroup>
+      <col width="18%" />
+      <col width="40%" />
+      <col width="10%" />
+      <col width="30%" />
+      </colgroup>
+      <thead>
+      <tr class="header">
+      <th align="left">Parameter</th>
+      <th align="left">Notes</th>
+      <th align="left">Default</th>
+      <th align="left">Examples</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr class="odd">
+      <td align="left">width</td>
+      <td align="left">Image width</td>
+      <td align="left">50%</td>
+      <td align="left">width=35%, width=200px, width=3cm,
+      width=2.5in</td>
+      </tr>
+      <tr class="even">
+      <td align="left">position</td>
+      <td align="left">Horizontal position relative to page</td>
+      <td align="left">center</td>
+      <td align="left">Options: left, center, right, float-left,
+      float-right; floats are text-wrapped.<br/>Examples:
+      position=center, position=float-right</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">h_padding</td>
+      <td align="left">Horizontal separation between image and
+      surrounding text</td>
+      <td align="left">0.15in</td>
+      <td align="left">h_padding=0.15in, h_padding=4mm, h_padding=10px,
+      etc.</td>
+      </tr>
+      <tr class="even">
+      <td align="left">v_padding</td>
+      <td align="left">Vertical separation between image and surrounding
+      text</td>
+      <td align="left">0.15in</td>
+      <td align="left">v_padding=0.12in, v_padding=.3cm, v_padding=9px,
+      etc.</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">cap_width</td>
+      <td align="left">Width of caption. If percent, relative to image
+      width</td>
+      <td align="left">90%</td>
+      <td align="left">cap_width=100%, cap_width=250px, cap_width=1in,
+      etc.</td>
+      </tr>
+      <tr class="even">
+      <td align="left">cap_space</td>
+      <td align="left">Space between caption and image</td>
+      <td align="left">0.15in</td>
+      <td align="left">Example: cap_space=0.12in</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">cap_position</td>
+      <td align="left">Caption vertical position relative to image</td>
+      <td align="left">above</td>
+      <td align="left">Options: above, below<br/>Example:
+      cap_position=below</td>
+      </tr>
+      <tr class="even">
+      <td align="left">cap_h_position</td>
+      <td align="left">Caption horizontal alignment relative to image
+      (caption itself may only be above or below)</td>
+      <td align="left">center</td>
+      <td align="left">Options: left, center, right<br/>Example:
+      cap_h_position=left</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">cap_text_align</td>
+      <td align="left">Caption text alignment</td>
+      <td align="left">left</td>
+      <td align="left">Options: left, center, right<br/>Example:
+      cap_text_align=left</td>
+      </tr>
+      <tr class="even">
+      <td align="left">cap_text_size</td>
+      <td align="left">Allows tweak of caption text size relative to
+      body text</td>
+      <td align="left">small</td>
+      <td align="left">Options: small, normal, large<br/>Example:
+      cap_text_size=normal</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">cap_text_font</td>
+      <td align="left">If specified, font must be a registered system
+      font; use sparingly</td>
+      <td align="left"></td>
+      <td align="left">Options may include any system
+      font.<br/>Examples: cap_text_font=Helvetica, cap_text_font=Arial,
+      cap_text_font=Times, etc.</td>
+      </tr>
+      <tr class="even">
+      <td align="left">cap_text_style</td>
+      <td align="left">Caption text style</td>
+      <td align="left">plain</td>
+      <td align="left">plain, italic, bold, oblique, bold-oblique</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">cap_label</td>
+      <td align="left">Allows specifying a numbered custom label that
+      appears before caption</td>
+      <td align="left">none</td>
+      <td align="left">Options may include any string. For example,
+      ‘cap_label=“Figure”’ will result in a label like “Figure
+      4”.<br/>‘cap_label=“Photo”’ will produce a lable like “Photo 1”,
+      etc. Note: You must enclose your label within quotes, e.g., “My
+      Photo”.</td>
+      </tr>
+      <tr class="even">
+      <td align="left">cap_label_sep  </td>
+      <td align="left">Allows specifying a custom separator character(s)
+      between the numbered custom label and caption.</td>
+      <td align="left">  “: ”</td>
+      <td align="left">By default, label and caption are separated by a
+      colon followed by a space character, like this: <br/>“Figure 4: My
+      caption…”<br/>Ensure you enclose your custom separater within
+      quotes if it will contain any space character and use the
+      underscore character to indicate the space. For example, the
+      following shows a custom separator, a hyphen surrounded by space
+      characters:<br/>‘cap_label_sep=“_-_”’<br/>It will appear as, for
+      example,<br/>“Photo 2 - My caption…”</td>
+      </tr>
+      <tr class="odd">
+      <td align="left">latex_adjust_lines</td>
+      <td align="left">This allows tweaking the wrap height for a
+      wrapped image in latex/pdf formats. Sometimes the wrapfig
+      extension misjudges wrap height and text may flow into the image
+      below or have too much empty space below. Should this occur, you
+      may try specifying different equialent line heights for that
+      image, e.g., “10”, “15”, etc. (You also may wish to tweak the
+      image width in such cases, e.g., “width=42%” instead of
+      “…45%.”)</td>
+      <td align="left"></td>
+      <td align="left">This parameter affects <em>only</em> latex/pdf
+      images. Examples: latex_adjust_lines=10, latex_adjust_lines=12,
+      latex_adjust_lines=15, etc.</td>
+      </tr>
+      <tr class="even">
+      <td align="left"></td>
+      <td align="left"></td>
+      <td align="left"></td>
+      <td align="left"></td>
+      </tr>
+      </tbody>
+      </table>
+      <p>Values should be a number followed immediately by one of “in”,
+      “cm”, “mm” or “px”</p>
+      </div>
+      </div>
+      <div id="setting-up-to-use" class="section level1">
+      <h1>Setting up to use</h1>
+      <p>It is assumed the user already has installed Pandoc. If not,
+      information is provided <a
+      href="https://pandoc.org/installing.html">here</a>.</p>
+      <p>You should place your markdown document in a folder along with
+      the lplace-image.lua pandoc filter and supporting folders.</p>
+      <p><div id='fig_2' style='margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:80%; '><div style='width:90%; margin:auto; text-align:center; padding-bottom:14.4px'><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 2:</span> This illustrates how your files should be organized.</span></div><img src='images-md/files-organization.png' width='100%'/></div></p>
+      </div>
+      <div id="invoking-filter-from-pandoc" class="section level1">
+      <h1>Invoking filter from Pandoc</h1>
+      <p>This filter can be invoked on the command line with the
+      “–lua-filter” option, e.g., “--lua-filter=place-image.lua”. An
+      example might be</p>
+      <p><code>pandoc -f markdown -t html myfile.md -o myfile.html --css=./css-md/mdstyles.css --template=templates/default.html5 --lua-filter=./place-image.lua -s</code></p>
+      <p>Alternatively, if you are working within an environment like
+      R-Studio that runs Pandoc, it may be included in the YAML header,
+      for example,</p>
+      <pre><code>
+      ---
+      title: \"My extraordinarily beautiful document\" 
+      output:
+        html_document:
+      <span style="color:#45c">    pandoc_args: [\"--lua-filter=place-image.lua\"]</span>
+      ---
+      </code></pre>
+      <p><div id='fig_3' style='margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:60%; '><div style='width:90%; margin:auto; text-align:center; padding-bottom:14.4px'><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 3:</span> Now you can place and caption your images and illustrations wherever and however you like!</span></div><img src='images-md/happy-face-doc.png' width='100%'/></div></p>
+      <p><a name="using-wrapfig"></a></p>
+      </div>
+      <div id="using-wrapfig" class="section level1">
+      <h1>Special considerations for floated images in latex/pdf
+      documents</h1>
+      <div id="include-these-packages" class="section level2">
+      <h2>Include these packages</h2>
+      <p>For Pandoc conversion into Latex and pdf, these three package
+      statements should be included in the latex template file. (For
+      your convenience, they already are in the “default.latex” and
+      “eisvogel.latex” templates in the “templates” folder on this
+      site.)</p>
+      <p><code>\usepackage{layouts} % allows calculating width relative to latex/pdf page width   \usepackage{wrapfig} % enables text wrap-around of figures   \usepackage[export]{adjustbox}  % must include to enable additional positioning</code></p>
+      <p>Again, these package statements already are in the following
+      two template versions included on this site, either of which you
+      can use for Pandoc conversion into latex/pdf documents:</p>
+      <ul>
+      <li>default.latex — The default latex template by Pandoc author
+      John MacFarlane, to which I added those statements.</li>
+      <li>eisvogel.latex - The latex template by Pascal Wagler, based
+      upon template by Pandoc author John MacFarlane. This is the latex
+      template I prefer for its expanded capabilities.</li>
+      </ul>
+      </div>
+      <div id="image-wrapping-issues-in-latexpdf-documents"
+      class="section level2">
+      <h2>Image wrapping issues in latex/pdf documents</h2>
+      <p>There are some known issues when floating images (with text
+      wrap) for pdf and latex documents that may elicit every disease
+      known to medical science. Factors such as image location, caption
+      length and proximity to a table can cause problems. Ensure you
+      review the caveats and hints below if you plan to output to
+      pdf/latex.</p>
+      <div id="avoiding-issues" class="section level3">
+      <h3>Avoiding issues</h3>
+      <div id="use-for-image-width" class="section level4">
+      <h4>Use “%” for image width</h4>
+      <p>The fewest issues should be encounted by using percentage
+      <code>%</code> rather than indicating image widh using
+      <code>in</code>, <code>cm</code>, <code>mm</code>, or
+      <code>px</code>. For example:</p>
+      <p><code>width=40%</code></p>
+      </div>
+      <div id="avoid-placing-floated-images-too-close-together"
+      class="section level4">
+      <h4>Avoid placing floated images too close together</h4>
+      <p>Whenever the pandoc converter encounters a floated image too
+      close to a top or bottom margin, it will move the image, which may
+      unexpectedly cause overlap with another image; Armageddon may
+      follow.</p>
+      </div>
+      </div>
+      <div id="repairing-defective-text-wraps" class="section level3">
+      <h3>Repairing defective text-wraps</h3>
+      <div id="vertical-wrap-accuracy-issue" class="section level4">
+      <h4>Vertical wrap accuracy issue</h4>
+      <p>There is a known issue with respect to pandoc/wrapfig’s
+      text-wrap accuracy. After you’ve generated a latex or pdf
+      document, it’s common to find some floated images with extra blank
+      space below the image or the image extending into wrapped text
+      below. This appears to be because latex <em>guesses</em> the
+      equivalent number of blank lines needed to match the height of the
+      image — and sometimes it guesses wrong.</p>
+      <p>Should this problem occur, you may enter a ‘pdf_adjust_lines’
+      parameter to try different equialent line heights for that image,
+      e.g., “10”, “15”, etc., until the wrap height is correct. Here’s
+      an example of using the ‘pdf_adjust_lines’ parameter:</p>
+      <p><code>![My caption](my-image.jpg){position=float-right width=40% cap_label="My Figure" pdf_adjust_lines=12}</code></p>
+      </div>
+      </div>
+      <div
+      id="floated-image-near-a-table-causing-left-or-right-margin-to-move"
+      class="section level3">
+      <h3>Floated image near a table causing left or right margin to
+      move</h3>
+      <p>A wrapped image that causes text from a table to float around
+      it may cause a margin below it to change. Move or resize the image
+      to ensure its bottom does not extend into a table.</p>
+      </div>
+      <div
+      id="use-the-format-specific-pdf-prefix-for-pdflatex-image-parameters"
+      class="section level3">
+      <h3>Use the format-specific <em>‘<code>pdf:</code>’</em> prefix
+      for pdf/latex image parameters</h3>
+      <p>For pdf and latex documents, you’ll want to make liberal use of
+      the document type prefix <em>‘pdf:’</em> with your image
+      parameters. This will cause the parameter value to override a
+      default or other specified value. For example, if you’ve specified
+      a width of 50% for a float-right image but the pdf version extends
+      below the bottom margin, you may be able to resolve the issue by
+      specifying a different image width for pdf/latex documents, like
+      this:</p>
+      <p><code>![My caption](my-image.jpg){position=float-right width=40% pdf:width=35% cap_label="My Figure" pdf_adjust_lines=12}</code></p>
+      <p>This should cause the image to appear at 35% width for a pdf or
+      latex doc format, while it will appear at 40% width for any other
+      doc format.</p>
+      <p>Alternatively, you may elect not to float the image in a
+      pdf/latex doc with the position parameter like this:</p>
+      <p><code>![My caption](my-image.jpg){position=float-right pdf:position=center width=40% cap_label="My Figure"}</code></p>
+      <p>Note, in this case we are not <em>floating</em> the image so
+      the <code>pdf_adjust_lines</code> parameter is not needed.</p>
+      <p>The <code>prefix</code> modifier can be a powerful means of
+      adjusting images that appear problematic in pdf (or other)
+      formats.</p>
+      <div
+      id="i-hope-you-find-some-of-this-useful.-i-welcome-any-corrections-feedback-and-suggestions"
+      class="section level5">
+      <h5>I hope you find some of this useful. I welcome any
+      corrections, feedback and suggestions!</h5>
+      <p>George</p>
+      </div>
+      </div>
+      </div>
+      </div>
+  </body>
+
+</html>
