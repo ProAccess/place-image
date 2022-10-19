@@ -139,11 +139,6 @@ local docx_cap_text_styles = { -- Text style Open Office codes
     ["bold-oblique"] = '<w:b w:val="true"/><w:i w:val="true"/>',
     ["bold-italic"] = '<w:b w:val="true"/><w:i w:val="true"/>'
 }
-local cap_ltx_text_alignment = { -- Caption text alignment
-    ["left"] = '\\raggedright',
-    ["center"] = '\\centering',
-    ["right"] = '\\raggedleft'
-}
 local ltx_cap_text_styles = { -- Text style latex/PDF codes
     -- ["plain"] = "\\textrm{X}",
     -- ["normal"] = "\\textrm{X}",
@@ -154,6 +149,14 @@ local ltx_cap_text_styles = { -- Text style latex/PDF codes
     ["oblique"] = '\\textit{X}',
     ["bold-oblique"] = '\\textit{\\textbf{X}}',
     ["bold-italic"] = '\\textit{\\textbf{X}}'
+}
+local ltx_cap_text_alignment = { -- Caption text alignment
+    ["left"] = '\\raggedright',
+    ["center"] = '\\centering',
+    ["right"] = '\\raggedleft'
+    -- ["left"] = '\\begin{left}X\\end{left}',
+    -- ["center"] = '\\begin{center}X\\end{center}',
+    -- ["right"] = '\\begin{right}X\\end{right}'
 }
 
 -- local doc_specific_i = 4 -- 'Document-type-specific' column of image params table
@@ -189,7 +192,7 @@ function Meta(meta)
     image_params["cap_space"][default_i] = "0.15in"
     image_params["cap_position"][default_i] = "above"
     image_params["cap_h_position"][default_i] = "center"
-    image_params["cap_text_align"][default_i] = "center"
+    image_params["cap_text_align"][default_i] = "left"
     image_params["cap_text_font"][default_i] = ""
     image_params["cap_text_size"][default_i] = "normal"
     image_params["cap_text_style"][default_i] = "plain"
@@ -675,8 +678,8 @@ function Image(img)
     -- Add cap text alignment to text_styles_list
     cap_html_style = cap_html_style .. "text-align:" .. cap_text_align .. "; "
     docx_text_align_xml = '<w:jc w:val="' .. cap_text_align .. '" />'
-    caption_ltx_style = caption_ltx_style ..
-                            cap_ltx_text_alignment[cap_text_align]
+    -- caption_ltx_style = caption_ltx_style ..
+    --                         ltx_cap_text_alignment[cap_text_align]
 
     -- *************************************************************************
     -- HTML/Epub documents prep
@@ -718,8 +721,8 @@ function Image(img)
         -- *************************************************************************
         -- Latex/PDF documents prep
     elseif FORMAT:match "latex" then -- For Latex/PDF documents
-        cap_txt = "" -- Reset
         print("Now processing latex/PDF for " .. src)
+        cap_txt = "" -- Reset
         src = string.gsub(src, "%%20", " ") -- Latex requires substituting real space for '%20'
         i, j = string.find(src, ".gif") -- Warn that GIF graphics cannot be converted to latex/pdf
         if i ~= nil then
@@ -769,6 +772,9 @@ function Image(img)
             graphic_pos = ""
             graphic_siz_frac = 1.0
         end
+        -- cap_text_ltx_style = string.gsub(cap_text_ltx_style, "X",
+        --                                  ltx_cap_text_alignment[cap_text_align])
+
         if cap_h_position == "left" then
             ltx_cap_l_wd = 0
             ltx_cap_r_wd = 0
@@ -784,7 +790,7 @@ function Image(img)
         --         ltx_cap_r_wd .. "; graphic_siz_frac: " .. graphic_siz_frac ..
         --         "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
-            frame_compensation = 0
+            float_frame_comp = 0
             if (cap_position == "above") then
                 cap_pdg_above = padding_v -- If not floated, insert space above and below
                 cap_pdg_below = cap_space
@@ -797,16 +803,18 @@ function Image(img)
                 lnbr_below = ""
             end
         else -- if for floated 'wrapfigure'
-            frame_compensation = -.3
+            float_frame_comp = -.3
             if (cap_position == "above") then
-                cap_pdg_above = frame_compensation
+                cap_pdg_above = 0
                 cap_pdg_below = cap_space
+                lnbr_above = ""
+                lnbr_below = "\\linebreak"
             else
                 cap_pdg_above = cap_space
-                cap_pdg_below = frame_compensation
+                cap_pdg_below = float_frame_comp
+                lnbr_above = "\\linebreak"
+                lnbr_below = ""
             end
-            lnbr_above = "\\linebreak"
-            lnbr_below = ""
         end
         if #cap_text > 0 then -- If caption
             cap_txt = caption_ltx_style .. string.gsub(cap_text_ltx_style, "X",
@@ -822,7 +830,8 @@ function Image(img)
             cap_row = '\\vspace{' .. cap_pdg_above .. 'in}' .. lnbr_above ..
                           '\\begin{minipage}{' .. ltx_cap_l_wd ..
                           '\\linewidth}{~}\\end{minipage}\\begin{minipage}{' ..
-                          cap_wid_as_prcent .. '\\linewidth}' .. cap_txt ..
+                          cap_wid_as_prcent .. '\\linewidth}' ..
+                          ltx_cap_text_alignment[cap_text_align] .. cap_txt ..
                           '\\end{minipage}\\begin{minipage}{' .. ltx_cap_r_wd ..
                           '\\linewidth}{~}\\end{minipage}' .. '\\vspace{' ..
                           cap_pdg_below .. 'in}' .. lnbr_below
@@ -847,13 +856,17 @@ function Image(img)
         end
         -- print("latex_figure_type: " .. latex_figure_type .. "; width_in: " ..
         --           width_in .. "; graphic_siz_frac: " .. graphic_siz_frac ..
-        --           "; wid_frac: " .. wid_frac .. "\nframe_assembly: " ..
-        --           frame_assembly)
+        --           "; wid_frac: " .. wid_frac .. "; cap_h_position: " ..
+        --           cap_h_position .. "; cap_text_align: " .. cap_text_align ..
+        --           "; \ncap_text_ltx_style: " .. cap_text_ltx_style ..
+        --           "\nframe_assembly: " .. frame_assembly)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
             results = frame_assembly
         else -- if for 'wrapfigure'
             fig_open = string.gsub(ltx_position, "X", wid_frac) -- Insert width if wrapfigure
-            results = fig_open .. "\\vspace{" .. frame_compensation .. "in}" ..
+            -- results = fig_open .. "\\vspace{" .. float_frame_comp .. "in}" ..
+            --               frame_assembly .. "\\end" .. latex_figure_type
+            results = fig_open .. "\\vspace{" .. float_frame_comp .. "in}" ..
                           frame_assembly .. "\\end" .. latex_figure_type
         end
 
