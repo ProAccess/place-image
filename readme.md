@@ -1,20 +1,14 @@
 # A solution for enhanced image & caption control
 
-<style>
-myimg {
-  display: block;
-  margin-left: auto;
-  margin-right: 0;
-}
-</style>
-
 The *image-placement.lua* Pandoc filter is intended to address commonly
 encountered shortcomings when displaying images in documents created by
 Pandoc from markdown documents. Now you can specify a variety of image
 and caption parameters directly within markdown images statements. Here
 are two brief examples:
 
-<img src="./images-md/examples.png" style="width:100.0%" />
+<img src='./images-md/examples.png' width='100%' align='align=center'/>
+
+<br />
 
 This filter allows you to specify these parameters:
 
@@ -230,12 +224,11 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document in a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<figure>
-<img align="right" src="./images-md/files-organization.png" width="50%"
-alt="This illustrates how your files should be organized." />
-<figcaption aria-hidden="true">This illustrates how your files should be
-organized.</figcaption>
-</figure>
+<img src='./images-md/files-organization.png' width='100%' align='align=center'/>
+
+<br />
+
+<p align=center>Figure 2:This illustrates how your files should be organized.</p>
 
 # Invoking filter from Pandoc
 
@@ -256,13 +249,11 @@ output:
 ---
 </code></pre>
 
-<figure>
-<img src="./images-md/happy-face-doc.png" data-cap_position="above"
-data-cap_text_align="center" style="width:60.0%"
-alt="Now you can place and caption your images and illustrations wherever and however you like!" />
-<figcaption aria-hidden="true">Now you can place and caption your images
-and illustrations wherever and however you like!</figcaption>
-</figure>
+<img src='./images-md/happy-face-doc.png' width='100%' align='align=center'/>
+
+<br />
+
+<p align=center>Figure 3:Now you can place and caption your images and illustrations wherever and however you like!</p>
 
 <a name="using-wrapfig"></a>
 
