@@ -223,8 +223,7 @@ You should place your markdown document in a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
 <figure>
-<img src="./images-md/files-organization.png" data-cap_position="above"
-data-cap_text_align="center" style="width:50.0% text-align: right;"
+<img src="./images-md/files-organization.png" width="400"
 alt="This illustrates how your files should be organized." />
 <figcaption aria-hidden="true">This illustrates how your files should be
 organized.</figcaption>
