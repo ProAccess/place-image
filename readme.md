@@ -230,8 +230,9 @@ organized.</figcaption>
 </figure>  
 
 <pre>
-
-
+&nbsp;
+&nbsp;
+&nbsp;
 </pre>
 
 # Invoking filter from Pandoc
