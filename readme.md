@@ -235,9 +235,7 @@ place-image.lua pandoc filter and supporting folders.
 alt="This illustrates how your files should be organized." />
 <figcaption aria-hidden="true">This illustrates how your files should be
 organized.</figcaption>
-</figure>
-
-<br />
+</figure>  
 
 # Invoking filter from Pandoc
 
