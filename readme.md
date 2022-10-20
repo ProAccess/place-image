@@ -222,12 +222,14 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document in a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
+<div>
 <figure>
 <img src="./images-md/files-organization.png" width="50%"
 alt="This illustrates how your files should be organized." />
 <figcaption aria-hidden="true">This illustrates how your files should be
 organized.</figcaption>
 </figure>
+</div>
 
 # Invoking filter from Pandoc
 
