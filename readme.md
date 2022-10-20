@@ -1,5 +1,13 @@
 # A solution for enhanced image & caption control
 
+<style>
+myimg {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+</style>
+
 The *image-placement.lua* Pandoc filter is intended to address commonly
 encountered shortcomings when displaying images in documents created by
 Pandoc from markdown documents. Now you can specify a variety of image
@@ -222,7 +230,7 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document in a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<div>
+<div class="myimg">
 <figure>
 <img src="./images-md/files-organization.png" width="50%"
 alt="This illustrates how your files should be organized." />
