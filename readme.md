@@ -237,6 +237,8 @@ alt="This illustrates how your files should be organized." />
 organized.</figcaption>
 </figure>
 
+\newpage
+
 # Invoking filter from Pandoc
 
 This filter can be invoked on the command line with the “–lua-filter”
