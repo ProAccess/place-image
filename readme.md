@@ -237,7 +237,7 @@ alt="This illustrates how your files should be organized." />
 organized.</figcaption>
 </figure>
 
-\newpage
+<br/>
 
 # Invoking filter from Pandoc
 
