@@ -229,11 +229,9 @@ alt="This illustrates how your files should be organized." />
 organized.</figcaption>
 </figure>  
 
-<pre>
-&nbsp;
-&nbsp;
-&nbsp;
-</pre>
+&nbsp;  
+&nbsp;  
+&nbsp;  
 
 # Invoking filter from Pandoc
 
