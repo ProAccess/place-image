@@ -224,6 +224,7 @@ place-image.lua pandoc filter and supporting folders.
 
 <p width="60.0%" align="right">Figure 1: This illustrates how your files should be organized.</p>
 <img src="./images-md/files-organization.png" width="60.0%" align="right">
+<br /> <br /> <br /> <br />
 
 # Invoking filter from Pandoc
 
@@ -246,6 +247,7 @@ output:
 
 <p width="60.0%" align="center">Figure 2: Now you can place and caption your images and illustrations wherever and however you like!</p>
 <p align="center"><img src="./images-md/happy-face-doc.png" width="60.0%"></p>
+<br /> <br /> <br /> <br />
 
 <a name="using-wrapfig"></a>
 
