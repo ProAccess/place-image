@@ -6,9 +6,7 @@ Pandoc from markdown documents. Now you can specify a variety of image
 and caption parameters directly within markdown images statements. Here
 are two brief examples:
 
-<img src='./images-md/examples.png' width='100.0%' align='align=center'/>
-
-<br />
+<img src="./images-md/examples.png width="100.0%" align="center">
 
 This filter allows you to specify these parameters:
 
@@ -224,11 +222,11 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document in a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<img src='./images-md/files-organization.png' width='60.0%' align='align=center'/>
+<p width="60.0%" align="center">Figure 2:This illustrates how your files should be organized.</p>
 
 <br />
 
-<p margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:60%; align=center>Figure 2:This illustrates how your files should be organized.</p>
+<img src="./images-md/files-organization.png width="60.0%" align="center">
 
 # Invoking filter from Pandoc
 
@@ -249,11 +247,11 @@ output:
 ---
 </code></pre>
 
-<img src='./images-md/happy-face-doc.png' width='60.0%' align='align=center'/>
+<p width="60.0%" align="center">Figure 3:Now you can place and caption your images and illustrations wherever and however you like!</p>
 
 <br />
 
-<p margin-right:auto; margin-left:auto; padding: 14.4px 0px 14.4px 0px ; width:60%; align=center>Figure 3:Now you can place and caption your images and illustrations wherever and however you like!</p>
+<img src="./images-md/happy-face-doc.png width="60.0%" align="center">
 
 <a name="using-wrapfig"></a>
 
