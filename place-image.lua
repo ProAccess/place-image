@@ -50,6 +50,7 @@ local width_entered -- Width as entered
 local width_in -- Image width in inches
 local columns -- Divisor by which width will be divided to fit within one of multiple table column cells
 local wid_frac -- Fraction of page width the image width represents
+local wid_percent -- Percentage page width the image width represents (string)
 local cap_text -- Caption text
 local image_id
 local img_label = "" -- From markdown image specification, unique to enable link
@@ -75,6 +76,7 @@ local pdf_adjust_lines -- 'Adjustment' value to shorten latex/pdf image wrap are
 local cap_docx_ind_l = 0
 local cap_docx_ind_r = 0
 local cap_html = ""
+local gfm_style = ""
 local html_style = ""
 local cap_text_style
 local cap_html_style = ""
@@ -555,7 +557,7 @@ function Image(img)
     end
 
     val = getParam("cap_label") -- Caption figure label, e.g. 'Figure', allowing sequencial numbering of custom label
-    if val ~= nil then
+    if val ~= nil and #cap_text > 0 then
         cap_label = val
         if cap_labels[cap_label] == nil then
             cap_labels[cap_label] = 1
@@ -623,6 +625,16 @@ function Image(img)
     -- **************************************************************************************************
     -- All entered values have been gathered. Now we process values and prep for output.
 
+    -- Get width values
+    wd = getParam("width")
+    i, j = string.find(wd, "%%") -- If width expressed as percentage, use that value
+    if i ~= nil then
+        wid_frac = tonumber(string.sub(wd, 1, i - 1)) / 100
+    else
+        wid_frac = dimToInches(wd) / pg_text_width -- MODIFY TO ACTUAL PAGE WIDTH
+    end
+    wid_percent = wid_frac * 100 .. "%"
+
     if (frame_position == "left") then
         html_style = html_style .. "margin-right:auto; margin-left:0px; " ..
                          htmlPad(custom_html_padding_table, '', '', '', '0') ..
@@ -653,6 +665,7 @@ function Image(img)
         docx_wrap = "notBeside"
     end
 
+    -- Get caption components
     if cap_label ~= nil and cap_label ~= "" then -- If figure type label specified, e.g., 'Figure', then compose numbered caption label
         cap_label_sep = string.gsub(cap_label_sep, "_", " ") -- Enables space char in separator entered as "\_"
         -- print("Examining cap_label_sep: " .. cap_label_sep)
@@ -682,9 +695,20 @@ function Image(img)
     --                         ltx_cap_text_alignment[cap_text_align]
 
     -- *************************************************************************
-    -- HTML/Epub documents prep
+    -- HTML/Epub/markdown documents prep
     if (FORMAT:match "html" or FORMAT:match "epub" or FORMAT:match "gfm" or
-        FORMAT:match "mark.*") then -- For html for markdown documents
+        FORMAT:match "mark.*") then -- For html or markdown documents
+        -- Define github md style
+        cap_gfm = '<p width="' .. wid_percent .. '" align="' .. frame_pos ..
+                      '">' .. cap_lbl .. cap_label_sep .. cap_text .. '</p>'
+        if (frame_pos == "center") then
+            img_gfm = '<p align="' .. frame_pos .. '"><img src="' .. src ..
+                          '" width="' .. wid_percent .. '"></p>'
+        else
+            img_gfm = '<img src="' .. src .. '" width="' .. wid_percent ..
+                          '" align="' .. frame_pos .. '">'
+        end
+        -- Define html style
         html_style = html_style .. "width:" .. width_entered .. "; " -- Add width to html style
         if (cap_position == "above") then
             if #cap_text > 0 then
@@ -695,12 +719,16 @@ function Image(img)
                         "'><span style='" .. cap_label_html_style .. "'>" ..
                         cap_lbl .. label_sep1 .. "</span>" .. label_sep2 ..
                         cap_text .. "</span></div>"
+                cap_gfm = cap_gfm .. '\n'
+
             else
                 cap_html = ""
+                cap_gfm = ""
             end
-            results = "<div id='" .. img_label .. "' style='" .. html_style ..
-                          "'>" .. cap_html .. "<img src='" .. src ..
-                          "' width='100%'/></div>"
+            results_html =
+                "<div id='" .. img_label .. "' style='" .. html_style .. "'>" ..
+                    cap_html .. "<img src='" .. src .. "' width='100%'/></div>"
+            results_gfm = cap_gfm .. img_gfm
         elseif (cap_position == "below") then
             if #cap_text > 0 then
                 cap_html = "<div style='" .. cap_html_style .. "padding-top:" ..
@@ -710,12 +738,23 @@ function Image(img)
                                cap_label_html_style .. "'>" .. cap_lbl ..
                                label_sep1 .. "</span>" .. label_sep2 .. cap_text ..
                                "</span></div>"
+                cap_gfm = '\n\n<br />\n\n' .. cap_gfm
             else
                 cap_html = ""
+                cap_gfm = ""
             end
-            results = "<div id='" .. img_label .. "' style='" .. html_style ..
-                          "'><img src='" .. src .. "' width='100%'/>" ..
-                          cap_html .. "</div>"
+            results_html =
+                "<div id='" .. img_label .. "' style='" .. html_style ..
+                    "'><img src='" .. src .. "' width='100%'/>" .. cap_html ..
+                    "</div>"
+            results_gfm = img_gfm .. cap_gfm
+        end
+        if FORMAT:match "gfm" or FORMAT:match "mark.*" then -- For markdown documents
+            print("Returning results for gfm: " .. results_gfm)
+            results = results_gfm
+        else
+            print("Returning results for html: " .. results_html)
+            results = results_html
         end
 
         -- *************************************************************************
@@ -730,13 +769,13 @@ function Image(img)
                           ") cannot be used when creating Latex or PDF files. Please substitute a '.png, '.jpg', or other graphic file.\n"
             src = "./images-md/Cannot use GIF for pdf.png"
         end
-        wd = getParam("width")
-        i, j = string.find(wd, "%%") -- If width expressed as percentage, use that value
-        if i ~= nil then
-            wid_frac = tonumber(string.sub(wd, 1, i - 1)) / 100
-        else
-            wid_frac = dimToInches(wd) / pg_text_width -- MODIFY TO ACTUAL PAGE WIDTH
-        end
+        -- wd = getParam("width")
+        -- i, j = string.find(wd, "%%") -- If width expressed as percentage, use that value
+        -- if i ~= nil then
+        --     wid_frac = tonumber(string.sub(wd, 1, i - 1)) / 100
+        -- else
+        --     wid_frac = dimToInches(wd) / pg_text_width -- MODIFY TO ACTUAL PAGE WIDTH
+        -- end
         -- print("PAGE WIDTH for pdf: " .. page_width .. "; pg_text_width: " ..
         --           pg_text_width .. "; image wd: " .. wd .. "; wid_frac: " ..
         --           wid_frac .. "; dimToInches(wd): " .. dimToInches(wd))
@@ -973,8 +1012,6 @@ function Image(img)
         end
         if (cap_position == "above") then -- If caption above
             if #cap_text > 0 then -- If caption
-                -- extra_space_above_caption = docx_extra_v_space
-                -- extra_space_below_caption = 0
                 space_above_caption = docx_padding_v
                 space_below_caption = docx_cap_space
                 space_above_image = 0
@@ -982,11 +1019,13 @@ function Image(img)
                 docx_cap_keep_w_next = "<w:keepNext/>"
                 docx_img_keep_w_next = ""
                 if float then space_above_caption = 0 end
+            else
+                space_above_image = docx_padding_v
+                space_below_image = docx_padding_v
+                docx_img_keep_w_next = ""
             end
         elseif (cap_position == "below") then -- If caption below
             if #cap_text > 0 then -- If caption
-                -- extra_space_above_caption = 0
-                -- extra_space_below_caption = docx_extra_v_space
                 space_above_image = docx_padding_v
                 space_below_image = 0
                 space_above_caption = docx_cap_space -- Tweak to compensate for extra space added automatically
@@ -994,6 +1033,10 @@ function Image(img)
                 docx_cap_keep_w_next = ""
                 docx_img_keep_w_next = "<w:keepNext/>"
                 if float then space_above_image = 0 end
+            else
+                space_above_image = docx_padding_v
+                space_below_image = docx_padding_v
+                docx_img_keep_w_next = ""
             end
         end
         docx_cap_par_style = '<w:pPr><w:ind w:left="' .. cap_docx_ind_l *
@@ -1002,25 +1045,18 @@ function Image(img)
                                  docx_text_align_xml
         img.attributes.width = inchesToPixels(width_in / columns) - padding_h *
                                    2 -- Ensure width expressed as pixels
-        -- docx_img_v_space_before = '<w:pPr><w:spacing w:before="' ..
-        -- docx_padding_v + space_below_caption ..
-        -- '" w:beforeAutospacing="0" /></w:pPr>'
-        -- docx_img_v_space_after =
-        -- '<w:pPr><w:spacing w:after="' .. docx_padding_v ..
-        -- '" w:afterAutospacing="0" /></w:pPr>'
-        docx_cap_pre = '<w:keepLines/>' .. docx_cap_keep_w_next ..
-                           '<w:spacing w:before="' .. space_above_caption ..
-                           '" w:after="' .. space_below_caption ..
-                           '" w:beforeAutospacing="0" />'
-        print("docx_cap_pre: " .. docx_cap_pre)
-        -- docx_cap_v_space_after =
-        --     '<w:keepNext/><w:keepLines/><w:spacing w:after="' ..
-        --         space_below_caption .. '" w:before="' .. 0 ..
-        --         '" w:afterAutospacing="0" />'
-        -- docx_img_pre = '<w:bookmarkStart w:id="0" w:name="' .. img_label ..
-        --               '"/><w:bookmarkEnd w:id="0"/><w:pPr><w:spacing w:before="' ..
-        --               docx_padding_v .. '" w:after="' .. docx_padding_v ..
-        --               '" /><w:jc w:val="' .. frame_pos .. '"/></w:pPr>'
+        -- print("space_above_image: " .. space_above_image ..
+        --           "; space_above_caption: " .. tostring(space_above_caption) ..
+        --           "space_below_caption: " .. tostring(space_below_caption) ..
+        --           "; docx_cap_space: " .. docx_cap_space .. "; docx_padding_v: " ..
+        --           docx_padding_v)
+        if #cap_text > 0 then -- If caption
+            docx_cap_pre = '<w:keepLines/>' .. docx_cap_keep_w_next ..
+                               '<w:spacing w:before="' .. space_above_caption ..
+                               '" w:after="' .. space_below_caption ..
+                               '" w:beforeAutospacing="0" />'
+            print("docx_cap_pre: " .. docx_cap_pre)
+        end
         docx_img_pre = '<w:bookmarkStart w:id="0" w:name="' .. img_label ..
                            '"/><w:bookmarkEnd w:id="0"/><w:pPr>' ..
                            docx_img_keep_w_next .. '<w:spacing w:before="' ..
