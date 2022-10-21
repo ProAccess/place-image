@@ -226,7 +226,7 @@ place-image.lua pandoc filter and supporting folders.
 
 <br />
 
-<img src="./images-md/files-organization.png" width="60%" align="center">
+<p align="right"><img src="./images-md/files-organization.png" width="40%""></p>
 
 # Invoking filter from Pandoc
 
