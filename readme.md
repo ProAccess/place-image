@@ -6,7 +6,7 @@ Pandoc from markdown documents. Now you can specify a variety of image
 and caption parameters directly within markdown images statements. Here
 are two brief examples:
 
-<img src="./images-md/examples.png" width="100%" align="center">
+<p align="center"><img src="./images-md/examples.png" width="100.0%"></p>
 
 This filter allows you to specify these parameters:
 
@@ -226,7 +226,7 @@ place-image.lua pandoc filter and supporting folders.
 
 <br />
 
-<p align="right"><img src="./images-md/files-organization.png" width="40%""></p>
+<p align="center"><img src="./images-md/files-organization.png" width="60.0%"></p>
 
 # Invoking filter from Pandoc
 
@@ -251,7 +251,7 @@ output:
 
 <br />
 
-<img src="./images-md/happy-face-doc.png" width="60.0%" align="center">
+<p align="center"><img src="./images-md/happy-face-doc.png" width="60.0%"></p>
 
 <a name="using-wrapfig"></a>
 
