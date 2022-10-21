@@ -219,14 +219,14 @@ Values should be a number followed immediately by one of “in”, “cm”,
 It is assumed the user already has installed Pandoc. If not, information
 is provided [here](https://pandoc.org/installing.html).
 
-You should place your markdown document in a folder along with the
+You should place your markdown document into a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<p width="70.0%" align="center">Figure 1: This illustrates how your files should be organized.</p>
+<p width="50.0%" align="center">Figure 1: This illustrates how your files should be organized.</p>
 
 <br />
 
-<p align="center"><img src="./images-md/files-organization.png" width="70.0%"></p>
+<p align="center"><img src="./images-md/files-organization.png" width="50.0%"></p>
 
 # Invoking filter from Pandoc
 
