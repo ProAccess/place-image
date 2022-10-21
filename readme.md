@@ -8,7 +8,31 @@ are two brief examples:
 
 <p align="center"><img src="./images-md/examples.png" width="100.0%"></p>
 
-This filter allows you to specify these parameters:
+# Document formats supported
+
+Currently this filter supports Pandoc converson of markdown documents to
+
+-   html — For web
+-   docx — For MS Word documents
+-   pdf — For convenient document exchange. The
+    ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’ package is
+    required for text-wrap (and is included in accompanying folder so
+    you need not locate separately). (For using with pdf/latex docs, see
+    *[Using wrapfig](#using-wrapfig)*, below.)
+-   latex — For typesetting and pdf conversion. The
+    ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’ package is
+    required for this as well (See *pdf* above.)
+-   epub — For commonly available e-published format
+-   gfm — For creating Github-flavored markdown `.md` files (limited
+    support). Although Github filters out most attributes, this filter
+    does provide github with limited capability for sizing and
+    positioning graphics and captions to left, right and center. If you
+    are viewing this via a github Readme.md file, it was created with
+    Pandoc using this place-image lua filter.
+
+# Parameters you can control for images and captions
+
+The place-image filter allows you to specify these parameters:
 
 -   width – Image width
 -   position – Horizontal position on page (left, center, right,
@@ -72,11 +96,13 @@ which will be sized separately:
 
 Supported document format identifiers include the following:
 
--   html:
--   docx:
--   pdf:
--   latex:
--   epub:
+-   html: — For web
+-   docx: — For MS Word documents
+-   pdf: — For convenient document exchange
+-   latex: — For typesetting and pdf conversion
+-   epub: — For commonly available e-published format
+-   gfm: — For creating Github-flavored markdown `.md` files (limited
+    support)
 
 <a name="image_specific"></a>
 
@@ -156,20 +182,6 @@ caption…”
 > cause a “scan” error. Therefore, use the “\_” underscore character to
 > indicate a space.
 
-# Document formats supported
-
-Currently this filter supports Pandoc converson of markdown documents to
-
--   html
--   docx
--   pdf — The ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’
-    package is required for text-wrap. (For using with pdf/latex docs,
-    see [Using wrapfig](#using-wrapfig), below.)
--   latex — The ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’
-    package is required for text-wrap. (For using with pdf/latex docs,
-    see [Using wrapfig](#using-wrapfig), below.)
--   epub
-
 <a name="commands-table"></a>
 
 # Image parameter details
@@ -222,8 +234,8 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document into a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<p width="60.0%" align="right">Figure 1: This illustrates how your files should be organized.</p>
-<img src="./images-md/files-organization.png" width="60.0%" align="right"><br />
+<p width="60.0%" align="center">Figure 1: This illustrates how your files should be organized.</p>
+<p align="center"><img src="./images-md/files-organization.png" width="60.0%"></p><br />
 <img src="./images-md/space.png" width="100%" height="1px"><br />
 
 # Invoking filter from Pandoc

@@ -1,4 +1,4 @@
---[[  -- George Markle - 22/10/18
+--[[  -- George Markle - 22/10/21
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -701,6 +701,18 @@ function Image(img)
         -- Define github md style
         cap_gfm = '<p width="' .. wid_percent .. '" align="' .. frame_pos ..
                       '">' .. cap_lbl .. cap_label_sep .. cap_text .. '</p>'
+        if wid_percent ~= "100%" and wid_percent ~= "100.0%" then
+            gfm_trailer =
+                '<br />\n<img src="./images-md/space.png" width="100%" height="1px"><br />\n'
+        else
+            gfm_trailer = "\n\n"
+        end
+        -- Commented code below unused as gfm ignores spans
+        -- cap_gfm = '<p width="' .. wid_percent .. '" align="' .. frame_pos ..
+        --               '">' .. '<span style="' .. cap_text_html_style ..
+        --               '"><span style="' .. cap_label_html_style .. '">' ..
+        --               cap_lbl .. label_sep1 .. "</span>" .. label_sep2 ..
+        --               cap_text .. '</span></p>'
         if (frame_pos == "center") then
             img_gfm = '<p align="' .. frame_pos .. '"><img src="' .. src ..
                           '" width="' .. wid_percent .. '"></p>'
@@ -720,7 +732,6 @@ function Image(img)
                         cap_lbl .. label_sep1 .. "</span>" .. label_sep2 ..
                         cap_text .. "</span></div>"
                 cap_gfm = cap_gfm .. '\n'
-
             else
                 cap_html = ""
                 cap_gfm = ""
@@ -728,7 +739,7 @@ function Image(img)
             results_html =
                 "<div id='" .. img_label .. "' style='" .. html_style .. "'>" ..
                     cap_html .. "<img src='" .. src .. "' width='100%'/></div>"
-            results_gfm = cap_gfm .. img_gfm
+            results_gfm = cap_gfm .. img_gfm .. gfm_trailer
         elseif (cap_position == "below") then
             if #cap_text > 0 then
                 cap_html = "<div style='" .. cap_html_style .. "padding-top:" ..
@@ -738,6 +749,7 @@ function Image(img)
                                cap_label_html_style .. "'>" .. cap_lbl ..
                                label_sep1 .. "</span>" .. label_sep2 .. cap_text ..
                                "</span></div>"
+                -- cap_gfm = '\n\n<br />\n\n' .. cap_gfm
                 cap_gfm = '\n\n<br />\n\n' .. cap_gfm
             else
                 cap_html = ""
@@ -747,7 +759,7 @@ function Image(img)
                 "<div id='" .. img_label .. "' style='" .. html_style ..
                     "'><img src='" .. src .. "' width='100%'/>" .. cap_html ..
                     "</div>"
-            results_gfm = img_gfm .. cap_gfm
+            results_gfm = img_gfm .. cap_gfm .. gfm_trailer
         end
         if FORMAT:match "gfm" or FORMAT:match "mark.*" then -- For markdown documents
             print("Returning results for gfm: " .. results_gfm)
