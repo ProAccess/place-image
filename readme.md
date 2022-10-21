@@ -222,7 +222,7 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document in a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<p width="60.0%" align="center">Figure 2:This illustrates how your files should be organized.</p>
+<p width="60.0%" align="center">Figure 2: This illustrates how your files should be organized.</p>
 
 <br />
 
@@ -247,7 +247,7 @@ output:
 ---
 </code></pre>
 
-<p width="60.0%" align="center">Figure 3:Now you can place and caption your images and illustrations wherever and however you like!</p>
+<p width="60.0%" align="center">Figure 3: Now you can place and caption your images and illustrations wherever and however you like!</p>
 
 <br />
 
