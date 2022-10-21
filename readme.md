@@ -222,8 +222,8 @@ is provided [here](https://pandoc.org/installing.html).
 You should place your markdown document into a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<p width="60.0%" align="center"><span style="font-family:; font-style:plain; font-size:medium; "><span style="font-style:normal; font-weight:normal; ">Figure 1:</span> This illustrates how your files should be organized.</span></p>
-<p align="center"><img src="./images-md/files-organization.png" width="60.0%"></p>
+<p width="60.0%" align="right">Figure 1: This illustrates how your files should be organized.</p>
+<img src="./images-md/files-organization.png" width="60.0%" align="right">
 
 # Invoking filter from Pandoc
 
@@ -244,7 +244,7 @@ output:
 ---
 </code></pre>
 
-<p width="60.0%" align="center"><span style="font-family:; font-style:plain; font-size:medium; "><span style="font-style:normal; font-weight:normal; ">Figure 2:</span> Now you can place and caption your images and illustrations wherever and however you like!</span></p>
+<p width="60.0%" align="center">Figure 2: Now you can place and caption your images and illustrations wherever and however you like!</p>
 <p align="center"><img src="./images-md/happy-face-doc.png" width="60.0%"></p>
 
 <a name="using-wrapfig"></a>
