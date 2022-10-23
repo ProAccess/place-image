@@ -32,6 +32,15 @@ Currently this filter supports Pandoc converson of markdown documents to
     a github Readme.md file, it was created with Pandoc using this
     place-image lua filter.
 
+### Example file included
+
+The master document used to create this *gfm* markdown readme.md is
+named **README-master.Rmd**. (Although it is in the *R* flavor of
+markdown, it is substantially identical to a *.md* format.) It is
+included in the github repository so you can view how the YAML headers
+are set up for the various output formats and how both global and
+individual image parameters are set.
+
 # Parameters you can control for images and captions
 
 The place-image filter allows you to specify these parameters:
