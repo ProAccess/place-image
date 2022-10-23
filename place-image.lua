@@ -1,4 +1,4 @@
---[[  -- George Markle - 22/10/21
+--[[  -- George Markle - 22/10/22
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -38,7 +38,8 @@ local valid_attr_names =
         "cap_label", -- If specified, can be any, e.g., "Figure", "Photo", "My Fantatic Table", etc.
         "cap_label_style", -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
         "cap_label_sep", -- If specified, indicates separater between caption label number and caption, e.g., ": "
-        "pdf_adjust_lines" -- Special parameter for latex/pdf output. Provided for those cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
+        "pdf_adjust_lines", -- Special parameter for latex/pdf output - for cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
+        "pdf_anchor_strict" -- Indicates whether image may be moved to nearby location to avoid margin intrusion ()
     }
 local image_params = {} -- Will contain image placement parameters {["param"],{var_default, val_global, val_this}}
 local default_i = 1 -- 'Default' column of image params table
@@ -73,6 +74,7 @@ local ltx_cap_l_wd
 local ltx_cap_r_wd
 local ltx_cap_h_pos
 local pdf_adjust_lines -- 'Adjustment' value to shorten latex/pdf image wrap area.
+local pdf_anchor_strict -- Indicates strictness of latex image anchor
 local cap_docx_ind_l = 0
 local cap_docx_ind_r = 0
 local cap_html = ""
@@ -131,6 +133,7 @@ local text_styles_list = {
     "plain", "normal", "italic", "bold", "oblique", "bold-oblique",
     "bold-italic"
 }
+local affirm_list = {"true", "yes", "false", "no"}
 local docx_cap_par_style = "" -- Initialize paragraph frame style
 local docx_cap_text_styles = { -- Text style Open Office codes
     ["plain"] = '<w:b w:val="false"/><w:i w:val="false"/>',
@@ -199,8 +202,9 @@ function Meta(meta)
     image_params["cap_text_size"][default_i] = "normal"
     image_params["cap_text_style"][default_i] = "plain"
     image_params["cap_label_sep"][default_i] = ": "
-    image_params["cap_label"][default_i] = ""
+    image_params["cap_label"][default_i] = "false"
     image_params["cap_label_style"][default_i] = "plain"
+    image_params["pdf_anchor_strict"][default_i] = "false"
 
     init() -- Init variables before next image
 
@@ -260,6 +264,8 @@ function Meta(meta)
         end
         pg_text_width = page_width - l_mar - r_mar
     end
+    print("Papersize: " .. papersize .. "; page_width: " .. page_width ..
+              "; l_mar: " .. l_mar .. "; r_mar: " .. r_mar)
     -- Gather any global image parameters in Meta section
     doctype_overrides = {} -- Clear record of doc-type-specific overrides
     ptr = 1 -- Init pointer
@@ -364,7 +370,7 @@ function Image(img)
                     img.attributes[ptr][2] .. '\n'
             name = img.attributes[ptr][1]
             val = img.attributes[ptr][2]
-            err = recordParam(name, val, this_i, doctype_overrides)
+            err = recordParam(name, val, this_i, doctype_overrides) -- Record values from image attributes
             if #err > 0 then err_msg = err_msg .. err end
         end
         -- print("ACCUMULATED Image err_msg: " .. err_msg)
@@ -620,7 +626,18 @@ function Image(img)
         end
     end
 
-    -- cap_text = "FORMAT: " .. FORMAT .. "; " .. cap_text
+    val, par_source = getParam("pdf_anchor_strict") -- Indicates strictness of image float anchor
+    if (val ~= nil) then
+        if verify_entry(val, affirm_list) then
+            pdf_anchor_strict = val
+        else
+            pdf_anchor_strict = image_params["pdf_anchor_strict"][default_i]
+            err_msg = err_msg ..
+                          "Invalid indicator of image anchor strictness ('" ..
+                          tostring(pdf_anchor_strict) .. "')" .. par_source ..
+                          ". It should be 'true', 'false', 'yes' or 'no'.\n"
+        end
+    end
 
     -- **************************************************************************************************
     -- All entered values have been gathered. Now we process values and prep for output.
@@ -781,32 +798,33 @@ function Image(img)
                           ") cannot be used when creating Latex or PDF files. Please substitute a '.png, '.jpg', or other graphic file.\n"
             src = "./images-md/Cannot use GIF for pdf.png"
         end
-        -- wd = getParam("width")
-        -- i, j = string.find(wd, "%%") -- If width expressed as percentage, use that value
-        -- if i ~= nil then
-        --     wid_frac = tonumber(string.sub(wd, 1, i - 1)) / 100
-        -- else
-        --     wid_frac = dimToInches(wd) / pg_text_width -- MODIFY TO ACTUAL PAGE WIDTH
-        -- end
-        -- print("PAGE WIDTH for pdf: " .. page_width .. "; pg_text_width: " ..
-        --           pg_text_width .. "; image wd: " .. wd .. "; wid_frac: " ..
-        --           wid_frac .. "; dimToInches(wd): " .. dimToInches(wd))
         if pdf_adjust_lines ~= nil then -- If wrap lines adjustment specified
             ltx_adjust_lns = "[" .. pdf_adjust_lines .. "]" -- Compose code for it
         else
             ltx_adjust_lns = ""
         end
+        local fp = tostring(frame_position)
+        if string.match(fp, "float") ~= nil then -- If floated image, determine if strict anchors
+            pdf_anchors = {
+                ["left"] = {["true"] = "l", ["false"] = "L"},
+                ["right"] = {["true"] = "r", ["false"] = "R"}
+            }
+            pdf_anchor_str = pdf_anchors[frame_pos][pdf_anchor_strict] -- Get code indicating anchor strictness
+        else
+            pdf_anchor_str = "L" -- Default
+        end
+
         ltx_positions = {
             ["left"] = {'\\begin{figure}[htb]\\centering', 'flushleft'},
             ["center"] = {'\\begin{figure}[htb]\\centering', 'center'},
             ["right"] = {'\\begin{figure}[htb]\\centering', 'flushright'},
             ["float-left"] = {
-                '\\begin{wrapfigure}' .. ltx_adjust_lns ..
-                    '{l}{X\\linewidth}\\centering', 'flushleft'
+                '\\begin{wrapfigure}' .. ltx_adjust_lns .. '{' .. pdf_anchor_str ..
+                    '}{X\\linewidth}\\centering', 'flushleft'
             },
             ["float-right"] = {
-                '\\begin{wrapfigure}' .. ltx_adjust_lns ..
-                    '{r}{X\\linewidth}\\centering', 'flushright'
+                '\\begin{wrapfigure}' .. ltx_adjust_lns .. '{' .. pdf_anchor_str ..
+                    '}{X\\linewidth}\\centering', 'flushright'
             }
         }
         ltx_position = ltx_positions[frame_position][1]
@@ -823,8 +841,6 @@ function Image(img)
             graphic_pos = ""
             graphic_siz_frac = 1.0
         end
-        -- cap_text_ltx_style = string.gsub(cap_text_ltx_style, "X",
-        --                                  ltx_cap_text_alignment[cap_text_align])
 
         if cap_h_position == "left" then
             ltx_cap_l_wd = 0

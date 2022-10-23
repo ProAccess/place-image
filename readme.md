@@ -1,34 +1,36 @@
 # A solution for enhanced image & caption control
 
 The *image-placement.lua* Pandoc filter is intended to address commonly
-encountered shortcomings when displaying images in documents created by
-Pandoc from markdown documents. Now you can specify a variety of image
-and caption parameters directly within markdown images statements. Here
-are two brief examples:
+encountered shortcomings when displaying images and captions in
+documents created by Pandoc from markdown documents. Now you can specify
+a variety of image and caption parameters directly within markdown
+images statements. Here are two brief examples:
 
 <p align="center"><img src="./images-md/examples.png" width="100.0%"></p>
 
 # Document formats supported
 
+It is assumed you already have installed Pandoc. If not, information is
+provided [here](https://pandoc.org/installing.html).
+
 Currently this filter supports Pandoc converson of markdown documents to
 
 -   html — For web
 -   docx — For MS Word documents
--   pdf — For convenient document exchange. The
+-   pdf — For convenient document exchange. If you intend to create pdf
+    or latex documents, you will need to have *LaTex* installed. Click
+    [here](https://www.latex-project.org/get/) for more information. The
     ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’ package is
-    required for text-wrap (and is included in accompanying folder so
-    you need not locate separately). (For using with pdf/latex docs, see
-    *[Using wrapfig](#using-wrapfig)*, below.)
--   latex — For typesetting and pdf conversion. The
-    ‘[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)’ package is
-    required for this as well (See *pdf* above.)
+    required for text-wrap. (For using with pdf/latex docs, see *[Using
+    wrapfig](#using-wrapfig)*, below.)
+-   latex — For typesetting and pdf conversion.
 -   epub — For commonly available e-published format
 -   gfm — For creating Github-flavored markdown `.md` files (limited
     support). Although Github filters out most attributes, this filter
-    does provide github with limited capability for sizing and
-    positioning graphics and captions to left, right and center. If you
-    are viewing this via a github Readme.md file, it was created with
-    Pandoc using this place-image lua filter.
+    does provide limited capability for sizing and positioning graphics
+    and captions to left, right and center. If you are viewing this via
+    a github Readme.md file, it was created with Pandoc using this
+    place-image lua filter.
 
 # Parameters you can control for images and captions
 
@@ -62,19 +64,21 @@ The place-image filter allows you to specify these parameters:
 -   pdf_adjust_lines – Used to compensate for inaccurate wraps in Pandoc
     conversions to pdf and latex formats. It has no effect on other
     formats.
+-   pdf_anchor_strict – Indicates if pdf/latex image may be moved
+    automatically if too close to a top/bottom margin.
+
+## Control globally or just individually
 
 This filter lets you specify display of images in two ways: (1) for each
 image and (2) for all images, globally.
 
 ### You can specify params for each [specific image](#image_specific)
 
-Each markdown image statement can include desired parameters. For
-example, you can specify an image width, its caption label and caption
-position like this:
+Each markdown image statement can include desired parameters, which will
+override any default or global parameters. For example, you can specify
+an image width, its caption label and caption position like this:
 
 `![My caption](my-image.jpg){width=2.5in cap_label="My Figure" cap_position=above}`
-
-A parameter for a specific image will override any global parameter.
 
 ### … or globally, for *all* images
 
@@ -82,7 +86,7 @@ You can affect all images within a global
 “[imageplacement](#global-params)” statement in the YAML Meta section at
 the top of the markdown document, e.g.,
 
-`imageplacement: width=2.5in, cap_label="My Figure", cap_position=above`
+`imageplacement: width=45%, cap_label="My Figure", cap_position=above`
 
 ### You can even specify different image params for different document types
 
@@ -222,12 +226,16 @@ You may enter parameters in any order, for example:
 | cap_label          | Allows specifying a numbered custom label that appears before caption                                                                                                                                                                                                                                                                                                                                                           | none    | Options may include any string. For example, ‘cap_label=“Figure”’ will result in a label like “Figure 4”.<br/>‘cap_label=“Photo”’ will produce a lable like “Photo 1”, etc. Note: You must enclose your label within quotes, e.g., “My Photo”.                                                                                                                                                                                                                                    |
 | cap_label_sep      | Allows specifying a custom separator character(s) between the numbered custom label and caption.                                                                                                                                                                                                                                                                                                                                |   “: ”  | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…”<br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters:<br/>‘cap_label_sep=“\_-\_”’<br/>It will appear as, for example,<br/>“Photo 2 - My caption…” |
 | latex_adjust_lines | This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the image width in such cases, e.g., “width=42%” instead of “…45%.”) |         | This parameter affects *only* latex/pdf images. Examples: latex_adjust_lines=10, latex_adjust_lines=12, latex_adjust_lines=15, etc.                                                                                                                                                                                                                                                                                                                                               |
-|                    |                                                                                                                                                                                                                                                                                                                                                                                                                                 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| pdf_anchor_strict  | Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin.                                                                                                                                                                                                                                                                                                                                 | true    | Examples: pdf_anchor_strict=true, pdf_anchor_strict=false                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 # Setting up to use
 
 It is assumed the user already has installed Pandoc. If not, information
 is provided [here](https://pandoc.org/installing.html).
+
+If you intend to also create pdf or latex documents, you will also need
+to have *LaTex* installed. Click
+[here](https://www.latex-project.org/get/) for more information.
 
 You should place your markdown document into a folder along with the
 place-image.lua pandoc filter and supporting folders.
@@ -279,7 +287,7 @@ Pandoc conversion into latex/pdf documents:
 -   default.latex — The default latex template by Pandoc author John
     MacFarlane, to which I added those statements.
 -   eisvogel.latex - The latex template by Pascal Wagler, based upon
-    template by Pandoc author John MacFarlane. This is the latex
+    template by Pandoc author John MacFarlane. This is a superb latex
     template I prefer for its expanded capabilities.
 
 ## Image wrapping issues in latex/pdf documents
@@ -298,6 +306,13 @@ The fewest issues should be encounted by using percentage `%` rather
 than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
 
 `width=40%`
+
+#### Don’t override the pdf_anchor_strict default
+
+By default, the *pdf_anchor_strict* parameter is set to *false*, which
+allows latex to move images that are too close to a top or bottom margin
+to another page. It is strongly suggested you do not override this
+parameter.
 
 #### Avoid placing floated images too close together
 
