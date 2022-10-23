@@ -228,6 +228,44 @@ You may enter parameters in any order, for example:
 | latex_adjust_lines | This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the image width in such cases, e.g., “width=42%” instead of “…45%.”) |         | This parameter affects *only* latex/pdf images. Examples: latex_adjust_lines=10, latex_adjust_lines=12, latex_adjust_lines=15, etc.                                                                                                                                                                                                                                                                                                                                               |
 | pdf_anchor_strict  | Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin.                                                                                                                                                                                                                                                                                                                                 | true    | Examples: pdf_anchor_strict=true, pdf_anchor_strict=false                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
+## Supports header YAML *papersize* and *geometry* parameters
+
+Papersize can be specified as any of
+
+-   letter
+-   legal
+-   ledger
+-   tabloid
+-   executive
+-   ansi c
+-   ansi d
+-   ansi e
+-   a0
+-   a1
+-   a2
+-   a3
+-   a4
+-   a5
+-   a6
+-   a7
+-   a8
+
+For example
+
+<pre><code>
+---
+title: "Plan for Controlling Weather"
+<span style="color:#45c">papersize: "letter"
+geometry: "left=1in, right=1in, top=.75in, bottom=.75in, footskip=1cm"</span>
+output:
+  pdf_document:
+    template: "./templates/eisvogel.latex"
+    pandoc_args: ["--lua-filter=place-image.lua"]
+params:
+  author: Your Name
+---
+</code></pre>
+
 # Setting up to use
 
 It is assumed the user already has installed Pandoc. If not, information
