@@ -14,11 +14,6 @@ output:
   latex_document:
     template: "./templates/eisvogel.latex"
     pandoc_args: ["--lua-filter=place-image.lua"]
-  pdf_document:
-    template: "./templates/eisvogel.latex"
-    pandoc_args: ["--lua-filter=place-image.lua"]
-    toc: true
-    toc_depth: '3'
   word_document:
     reference_docx: "./templates/reference_template.docx"
     pandoc_args: ["--lua-filter=place-image.lua"]
@@ -29,11 +24,16 @@ output:
     self_contained: no
     toc: true
     toc_depth: '3'
+  pdf_document:
+    template: "./templates/eisvogel.latex"
+    pandoc_args: ["--lua-filter=place-image.lua"]
+    toc: true
+    toc_depth: '3'
 ---
 
 [comment]: # (This is the Master readme file, written in a more standard MacFarlane markdown format rather than in 'gfm' (Github-Flavored Markdown). This allows using Pandoc to create other doc format versions of this, such as Word .docx, html, epub and pdf. If this were a github-type markdown file to begin with it could not undergo such conversions as a github-version has its own internal document links, which do not work for other formats. Therefore, we maintain this 'master' markdown containing such links and then use Pandoc to generate a Git-specific .md version, which also displays correctly on github.)
 
-# A solution for enhanced image & caption control
+# A solution for enhanced image and caption control
 
 The *image-placement.lua* Pandoc filter is intended to address commonly encountered shortcomings when displaying images and captions in documents created by Pandoc from markdown documents. Now you can specify a variety of image and caption parameters directly within markdown images statements. Here are two brief examples:
 
@@ -47,7 +47,7 @@ Currently this filter supports Pandoc converson of markdown documents to
 
 - html — For web
 - docx — For MS Word documents
-- pdf — For convenient document exchange. If you intend to create pdf or latex documents, you will need to have *LaTex* installed. Click [here](https://www.latex-project.org/get/) for more information. The '[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)' package is required for text-wrap. (For using with pdf/latex docs, see *[Using wrapfig](#using-wrapfig)*, below.)
+- pdf — For convenient document exchange. If you intend to create pdf or latex documents, you will need to have *LaTex* installed. Click [here](https://www.latex-project.org/get/) for more information. The '[wrapfig](https://www.ctan.org/pkg/wrapfig?lang=en)' package is required for text-wrap. (For using with pdf/latex docs, see *[Special considerations for floated images in latex/pdf documents](#using-wrapfig)*, below.)
 - latex — For typesetting and pdf conversion.
 - epub — For commonly available e-published format
 - gfm — For creating Github-flavored markdown `.md` files (limited support). Although Github filters out most attributes, this filter does provide limited capability for sizing and positioning graphics and captions to left, right and center. If you are viewing this via a github Readme.md file, it was created with Pandoc using this place-image lua filter.
@@ -56,9 +56,11 @@ Currently this filter supports Pandoc converson of markdown documents to
 
 The master document used to create this *gfm* markdown readme.md is named **README-master.Rmd**. (Although it is in the *R* flavor of markdown, it is substantially identical to a *.md* format.) It is included in the github repository so you can view how the YAML headers are set up for the various output formats and how both global and individual image parameters are set.
 
-# Parameters you can control for images and captions
+# Parameters you can control
 
 The place-image filter allows you to specify these parameters:
+
+## For images and captions
 
 - width -- Image width
 - position -- Horizontal position on page (left, center, right, float-left, float-right; floats are text-wrapped.)
@@ -74,8 +76,13 @@ The place-image filter allows you to specify these parameters:
 - cap_label -- If specified, can be any, e.g., "Figure", "Photo", "My Fantastic Table", etc. Number following label will be respective to the label.
 - cap_label_style -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
 - cap_label_sep -- If specified, indicates separater between caption label number and caption, e.g., ":&nbsp;"
-- pdf_adjust_lines -- Used to compensate for inaccurate wraps in Pandoc conversions to pdf and latex formats. It has no effect on other formats.
+- adjust_frame_ht -- Used to compensate for inaccurate wraps in Pandoc conversions to pdf and latex formats. It has no effect on other formats.
 - pdf_anchor_strict -- Indicates if pdf/latex image may be moved automatically if too close to a top/bottom margin.
+
+## For headings
+
+- keep_with_next -- Used with *Headings* to keep them from being 'orphaned' at bottom of page.
+
 
 ## Control globally or just individually
 
@@ -172,12 +179,19 @@ Below is a table of parameters you can include. Wherever a size dimension is req
 - mm — milimeters
 - px — pixels (at 96 per-inch)
 
-You may enter parameters in any order, for example:
+Parameters appear between curly brackets ('{ }') immediately after a markdown element; they may be placed in any order, separated by a space. For example:
 
 `![My caption](my-image.jpg){position=float-left cap_position=below width=50%}`
 &nbsp;
 
+or
+
+`My heading{keep_with_next=5}`
+
 ## Parameters you can use 
+
+### For images and captions
+
 | Parameter  | Notes  | Default  | Examples  |
 | :-------- | :------------------- | :---- | :-------------- |
 | width  | Image width  | 50%  | width=35%, width=200px, width=3cm, width=2.5in  |
@@ -194,8 +208,15 @@ You may enter parameters in any order, for example:
 | cap_text_style  | Caption text style  | plain  | plain, italic, bold, oblique, bold-oblique  |
 | cap_label  | Allows specifying a numbered custom label that appears before caption  | none  | Options may include any string. For example, 'cap_label="Figure"' will result in a label like "Figure 4".<br/>'cap_label="Photo"' will produce a lable like "Photo 1", etc. Note: You must enclose your label within quotes, e.g., "My Photo". |
 | cap_label_sep&nbsp;&nbsp; | Allows specifying a custom separator character(s) between the numbered custom label and caption.  | &nbsp;&nbsp;":&nbsp;" | By default, label and caption are separated by a colon followed by a space character, like this: <br/>"Figure 4: My caption..."<br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters:<br/>'cap_label_sep="\_-\_"'<br/>It will appear as, for example,<br/>"Photo 2 - My caption..." |
-| latex_adjust_lines  | This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., "10", "15", etc. (You also may wish to tweak the image width in such cases, e.g., "width=42%" instead of "...45%.") |  | This parameter affects *only* latex/pdf images. Examples: latex_adjust_lines=10, latex_adjust_lines=12, latex_adjust_lines=15, etc.  |
-| pdf_anchor_strict | Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. | true | Examples: pdf_anchor_strict=true, pdf_anchor_strict=false |
+| adjust_frame_ht  | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., "10", "15", etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., "pdf:width=42%" instead of "width=45%.") |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf:adjust_frame_ht=15, etc.  |
+| close_frame | (PDF/latex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
+| pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. Normally, this should not be used. | false | Examples: pdf_anchor_strict=true |
+
+### For headings
+
+| Parameter  | Notes  | Default  | Examples  |
+| :-------- | :------------------- | :---- | :-------------- |
+| keep_with_next| Prevents headings from being orphaned when near page bottom. If you find a heading alone, it's usually because latex encountered an image(s) that complicated optimum page composition. In such case, use *keep_with_next* and specify a number of lines exceeding the equivalent number of lines between the heading and page bottom. | 4 | If near page bottom, e.g., `keep_with_next=5`. If farther up, `keep_with_next=30` |
 
 ## Supports header YAML *papersize* and *geometry* parameters
 
@@ -272,28 +293,46 @@ output:
 
 For Pandoc conversion into Latex and pdf, these three package statements should be included in the latex template file. (For your convenience, they already are in the "default.latex" and "eisvogel.latex" templates in the "templates" folder on this site.)
 
-`\usepackage{layouts} % allows calculating width relative to latex/pdf page width  
-\usepackage{wrapfig} % enables text wrap-around of figures  
-\usepackage[export]{adjustbox}  % must include to enable additional positioning`
+`\usepackage{layouts}` allows calculating width relative to latex/pdf page width
+
+`\usepackage{wrapfig}` enables text wrap-around of figures 
+
+`\usepackage[export]{adjustbox}`  must include to enable additional positioning
 
 Again, these package statements already are in the following two template versions included on this site, either of which you can use for Pandoc conversion into latex/pdf documents:
 
 - default.latex — The default latex template by Pandoc author John MacFarlane, to which I added those statements.
-- eisvogel.latex - The latex template by Pascal Wagler, based upon template by Pandoc author John MacFarlane. This is a superb latex template I prefer for its expanded capabilities.
+- eisvogel.latex — The latex template by Pascal Wagler, based upon template by Pandoc author John MacFarlane. This is a superb latex template I prefer for its expanded capabilities.
 
-## Image wrapping issues in latex/pdf documents
+## Issues in latex/pdf documents
 
 There are some known issues when floating images (with text wrap) for pdf and latex documents that may elicit every disease known to medical science. Factors such as image location, caption length and proximity to a table can cause problems. Ensure you review the caveats and hints below if you plan to output to pdf/latex.
 
+### Use this procedure
+
+After creating your markdown and viewing the rendered pdf,
+
+1. Scan your document for floated images where wrapped text fails to close around the image bottom — where blank space persists below the image. Wherever you find such an image, append the `close_frame=true` parameter immediately following the image markdown, for example: \    
+`![My caption here](./images-md/happy-face-doc.png){width=40% position=float-right close_frame=true}` \   
+Otherwise, do not use *close_frame*, unless needed to avoid unpleasant side-effects.
+
+2. After repairing unclosed floats as above, it's not uncommon for the invisible frame around a floated image — around which text is wrapped — to be slightly too small or too large, causing text below to be too close or too far from the image bottom. Wherever you find this, use an *adjust_frame_ht* parameter and try different numbers representing the number of lines equivalent to image + caption height, e.g., "10", "15", etc., until the wrap height is correct. Here's an example of using the 'adjust_frame_ht' parameter: \    
+`![My caption](my-image.jpg){position=float-right width=40% cap_label="My Figure" adjust_frame_ht=12}`
+
+3. Scan your rendered document for any orphaned headings (those appearing by themselves — usually near a page bottom). Append the *keep_with_next* parameter immediately after such a heading and try various values that will advance it to the next page to rejoin text. Try specifying a number representing the number of lines exceeding the equivalent number of lines between the heading and page bottom: perhaps '4' if near page bottom, or '30' if farther up. For example, \   
+`## This is my heading{keep_with_next=15}`
+
+Now, review your re-rendered document again and iterate the steps above if needed.
+
 ### Avoiding issues
 
-#### Use "%" for image width
+#### Use percentage for image width
 
-The fewest issues should be encounted by using percentage `%` rather than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
+The fewest issues should be encounted by using percentage ("`%`") rather than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
 
 `width=40%`
 
-#### Don't override the pdf_anchor_strict default
+#### Don't override the *pdf-anchor-strict* default
 
 By default, the *pdf_anchor_strict* parameter is set to *false*, which allows latex to move images that are too close to a top or bottom margin to another page. It is strongly suggested you do not override this parameter.
 
@@ -301,36 +340,26 @@ By default, the *pdf_anchor_strict* parameter is set to *false*, which allows la
 
 Whenever the pandoc converter encounters a floated image too close to a top or bottom margin, it will move the image, which may unexpectedly cause overlap with another image; Armageddon may follow.
 
-### Repairing defective text-wraps
+#### Don't place images by tables
 
-#### Vertical wrap accuracy issue
-
-There is a known issue with respect to pandoc/wrapfig's text-wrap accuracy. After you've generated a latex or pdf document, it's common to find some floated images with extra blank space below the image or the image extending into wrapped text below. This appears to be because latex *guesses* the equivalent number of blank lines needed to match the height of the image — and sometimes it guesses wrong. 
-
-Should this problem occur, you may enter a 'pdf_adjust_lines' parameter to try different equialent line heights for that image, e.g., "10", "15", etc., until the wrap height is correct. Here's an example of using the 'pdf_adjust_lines' parameter:
-
-`![My caption](my-image.jpg){position=float-right width=40% cap_label="My Figure" pdf_adjust_lines=12}`
-
-### Floated image near a table causing left or right margin to move
+Latex seems to get confused if it finds a floated image where any part of a table may wrap around it. Better keep tables and images apart.
 
 A wrapped image that causes text from a table to float around it may cause a margin below it to change. Move or resize the image to ensure its bottom does not extend into a table.
 
 ### Use the format-specific *'`pdf:`'* prefix for pdf/latex image parameters
 
-For pdf and latex documents, you'll want to make liberal use of the document type prefix *'pdf:'* with your image parameters. This will cause the parameter value to override a default or other specified value. For example, if you've specified a width of 50% for a float-right image but the pdf version extends below the bottom margin, you may be able to resolve the issue by specifying a different image width for pdf/latex documents, like this:
+For pdf and latex documents, you'll want to make liberal use of the document type prefix *'pdf:'* with your image parameters. This will cause the parameter value to override a default or specified value for a pdf/latex image. For example, if you've specified a width of 50% for a *float-right* image but the pdf version extends below the bottom margin, you may be able to resolve the issue by specifying a different image width for pdf/latex documents, like this:
 
-`![My caption](my-image.jpg){position=float-right width=40% pdf:width=35% cap_label="My Figure" pdf_adjust_lines=12}`
+`![My caption](my-image.jpg){position=float-right width=50% pdf:width=35% cap_label="My Figure"}`
 
-This should cause the image to appear at 35% width for a pdf or latex doc format, while it will appear at 40% width for any other doc format.
+This should cause the image to appear at 35% width for a pdf or latex doc format, while it will appear at 50% width for any other doc format.
 
 Alternatively, you may elect not to float the image in a pdf/latex doc with the position parameter like this:
 
 `![My caption](my-image.jpg){position=float-right pdf:position=center width=40% cap_label="My Figure"}`
 
-Note, in this case we are not *floating* the image so the `pdf_adjust_lines` parameter is not needed.
-
 The `prefix` modifier can be a powerful means of adjusting images that appear problematic in pdf (or other) formats.
 
-##### I hope you find some of this useful. I welcome any corrections, feedback and suggestions!
+#### I hope you find some of this useful. I welcome any corrections, feedback and suggestions!
 
 George
