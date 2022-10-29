@@ -73,11 +73,14 @@ The place-image filter allows you to specify these parameters:
     bold-italic. Default is plain.
 -   cap_label_sep – If specified, indicates separater between caption
     label number and caption, e.g., “: ”
--   adjust_frame_ht – Used to compensate for inaccurate wraps in Pandoc
-    conversions to pdf and latex formats. It has no effect on other
-    formats.
--   pdf_anchor_strict – Indicates if pdf/latex image may be moved
-    automatically if too close to a top/bottom margin.
+-   adjust_frame_ht – (PDF/latex documents only) — Used to compensate
+    for inaccurate wraps in Pandoc conversions to pdf and latex formats.
+    It has no effect on other formats.
+-   pdf_anchor_strict – (PDF/latex documents only) — Indicates if
+    pdf/latex image may be moved automatically if too close to a
+    top/bottom margin.
+-   close_frame – (PDF/latex documents only) — Fixes occasional failure
+    by latex to close the wrapping-frame below an image.
 
 ## For headings
 
