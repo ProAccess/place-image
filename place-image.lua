@@ -1,4 +1,4 @@
---[[  -- George Markle - 22/10/22
+--[[  --  Copyright 2022 George Markle - 22/10/28
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -10,7 +10,7 @@ local geometryVars -- Table from markdown meta table with geometry params
 local page_width = 8.5 -- Default printed page width in inches if papersize not specified in markdown header
 local l_mar = 1 -- Default Left margin in inches
 local r_mar = 1 -- Default Right margin in inches
-local pg_text_width = 6.5 -- Length of text width (page width minus left and right margins); Set default in case page-type not specified
+local pg_text_width = 6.5 -- Default length of text width (page width minus left and right margins); Set default in case page-type not specified
 local twips_per_point = 20
 local points_per_in = 72
 local pixels_per_in = 96
@@ -21,7 +21,7 @@ local mm_per_in = 25.4
 local bookmark = 1 -- Init figure number
 local dims = {"%", "in", "inches", "px", "pixels", "cm", "mm"}
 
-local valid_attr_names =
+local valid_img_attr_names =
     { -- Names of valid parameters. Each parameter and its value separated by "="
         "width", -- Image width
         "columns", -- Divisor by which width will be divided to fit within one of multiple table column cells
@@ -38,7 +38,9 @@ local valid_attr_names =
         "cap_label", -- If specified, can be any, e.g., "Figure", "Photo", "My Fantatic Table", etc.
         "cap_label_style", -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
         "cap_label_sep", -- If specified, indicates separater between caption label number and caption, e.g., ": "
-        "pdf_adjust_lines", -- Special parameter for latex/pdf output - for cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
+        "pdf_adjust_lines", -- For latex/pdf: - for cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
+        "pdf_restore_margin", -- For latex/pdf: Latex may not restore margin below floated image, leaving white space. This will restore margin.
+        "pdf_header_with_next", -- For latex/pdf: If header orphaned, move to next page if within x lines of bottom.
         "pdf_anchor_strict" -- Indicates whether image may be moved to nearby location to avoid margin intrusion ()
     }
 local image_params = {} -- Will contain image placement parameters {["param"],{var_default, val_global, val_this}}
@@ -75,12 +77,14 @@ local ltx_cap_r_wd
 local ltx_cap_h_pos
 local pdf_adjust_lines -- 'Adjustment' value to shorten latex/pdf image wrap area.
 local pdf_anchor_strict -- Indicates strictness of latex image anchor
+local pdf_restore_mar -- Indicates altered margin following image should be restored
+local pdf_header_with_next -- If fewer than this number of lines left before bottom, move to next page
 local cap_docx_ind_l = 0
 local cap_docx_ind_r = 0
 local cap_html = ""
 local gfm_style = ""
 local html_style = ""
-local cap_text_style
+local cap_text_style = ""
 local cap_html_style = ""
 local cap_text_html_style = ""
 local cap_text_docx_style = ""
@@ -150,8 +154,8 @@ local ltx_cap_text_styles = { -- Text style latex/PDF codes
     ["plain"] = "{X}",
     ["normal"] = "{X}",
     ["italic"] = '\\textit{X}',
-    ["bold"] = '\\textbf{X}',
     ["oblique"] = '\\textit{X}',
+    ["bold"] = '\\textbf{X}',
     ["bold-oblique"] = '\\textit{\\textbf{X}}',
     ["bold-italic"] = '\\textit{\\textbf{X}}'
 }
@@ -166,8 +170,9 @@ local ltx_cap_text_alignment = { -- Caption text alignment
 
 -- local doc_specific_i = 4 -- 'Document-type-specific' column of image params table
 local doctypes = {"html", "epub", "docx", "pdf", "latex", "gfm", "markdown"}
-local doctype_overrides -- Will contain any document-type-specific overrides
+local doctype_overrides = {} -- Will contain any document-type-specific overrides
 local doctype = string.match(FORMAT, "[%a]+")
+-- if doctype == "pdf" then doctype = "latex" end -- Pdf is produced via latex
 print("Format: " .. doctype)
 
 local ptr -- General purpose counter/pointer
@@ -183,30 +188,34 @@ function Meta(meta)
     local done = false
     local ptr = 1
     repeat -- Initialize table of image parameters
-        image_params[valid_attr_names[ptr]] = {nil, nil, nil}
+        image_params[valid_img_attr_names[ptr]] = {nil, nil, nil}
         ptr = ptr + 1
-    until ptr > #valid_attr_names
+    until ptr > #valid_img_attr_names
 
     -- Specify param value defaults
-    image_params["width"][default_i] = "50%"
-    image_params["columns"][default_i] = "1"
-    image_params["position"][default_i] = "center"
-    image_params["v_padding"][default_i] = ".15in"
-    image_params["h_padding"][default_i] = ".15in"
-    image_params["cap_width"][default_i] = "90%"
-    image_params["cap_space"][default_i] = "0.15in"
-    image_params["cap_position"][default_i] = "above"
-    image_params["cap_h_position"][default_i] = "center"
-    image_params["cap_text_align"][default_i] = "left"
-    image_params["cap_text_font"][default_i] = ""
-    image_params["cap_text_size"][default_i] = "normal"
-    image_params["cap_text_style"][default_i] = "plain"
-    image_params["cap_label_sep"][default_i] = ": "
-    image_params["cap_label"][default_i] = "false"
-    image_params["cap_label_style"][default_i] = "plain"
-    image_params["pdf_anchor_strict"][default_i] = "false"
-
-    init() -- Init variables before next image
+    image_params = {
+        ["width"] = {"50%", nil, nil},
+        ["columns"] = {"1", nil, nil},
+        ["position"] = {"center", nil, nil},
+        ["v_padding"] = {".15in", nil, nil},
+        ["h_padding"] = {".15in", nil, nil},
+        ["cap_width"] = {"90%", nil, nil},
+        ["cap_space"] = {".15in", nil, nil},
+        ["cap_position"] = {"above", nil, nil},
+        ["cap_h_position"] = {"center", nil, nil},
+        ["cap_text_align"] = {"left", nil, nil},
+        ["cap_text_font"] = {"", nil, nil},
+        ["cap_text_size"] = {"normal", nil, nil},
+        ["cap_text_style"] = {"plain", nil, nil},
+        ["cap_label"] = {"", nil, nil},
+        ["cap_label_sep"] = {": ", nil, nil},
+        ["cap_label_style"] = {"plain", nil, nil},
+        ["pdf_adjust_lines"] = {nil, nil, nil},
+        ["pdf_anchor_strict"] = {"false", nil, nil},
+        ["pdf_restore_margin"] = {"false", nil, nil},
+        ["pdf_header_with_next"] = {"4", nil, nil}
+    }
+    reset_img_params() -- Init variables before next image
 
     gl_html_padding_table = {
         dimToInches(image_params["v_padding"][default_i]) * pixels_per_in,
@@ -264,8 +273,8 @@ function Meta(meta)
         end
         pg_text_width = page_width - l_mar - r_mar
     end
-    print("Papersize: " .. papersize .. "; page_width: " .. page_width ..
-              "; l_mar: " .. l_mar .. "; r_mar: " .. r_mar)
+    -- print("Papersize: " .. papersize .. "; page_width: " .. page_width ..
+    --           "; l_mar: " .. l_mar .. "; r_mar: " .. r_mar)
     -- Gather any global image parameters in Meta section
     doctype_overrides = {} -- Clear record of doc-type-specific overrides
     ptr = 1 -- Init pointer
@@ -298,24 +307,31 @@ function Meta(meta)
     else
         print("No 'imageplacement' statement found in Meta section.")
     end
+    for ptr = 1, #doctype_overrides, 1 do -- print all overrides
+        print("Global override number " .. ptr .. "is: " .. doctype_overrides[1])
+    end
     doctype_override(global_i, doctype_overrides) -- Override any parameters where doc-specific override indicated
     return meta
 end
 
 -- **************************************************************************************************
 -- Reset these variables before next image
-function init()
-    frame_position = image_params["position"][default_i] -- Default image frame position
-    padding_h = dimToInches(image_params["h_padding"][default_i]) -- horizontal padding in inches between image and text
-    padding_v = dimToInches(image_params["v_padding"][default_i]) -- vertical padding in inches between image and text
-    docx_padding_h = dimToInches(image_params["h_padding"][default_i])
-    docx_padding_v = dimToInches(image_params["v_padding"][default_i])
+function reset_img_params()
+    -- err_msg = "" -- Reset error message
+    for ptr = 1, #valid_img_attr_names, 1 do -- Reset all param vals for current image
+        image_params[valid_img_attr_names[ptr]][this_i] = nil
+    end
+    -- frame_position = image_params["position"][default_i] -- Default image frame position
+    -- padding_h = dimToInches(image_params["h_padding"][default_i]) -- horizontal padding in inches between image and text
+    -- padding_v = dimToInches(image_params["v_padding"][default_i]) -- vertical padding in inches between image and text
+    -- docx_padding_h = dimToInches(image_params["h_padding"][default_i])
+    -- docx_padding_v = dimToInches(image_params["v_padding"][default_i])
 end
 
 -- **************************************************************************************************
 -- Image function;
 function Image(img)
-    init()
+    reset_img_params()
     src = img.src
     local err = ""
     local pos_center -- Horizontal center of image
@@ -351,40 +367,47 @@ function Image(img)
     if image_num > 1 then
         err_msg = "" -- Reset error message. Allows including Meta global errors in first error msg
     end
-    ptr = 1
-    repeat -- Reset params for this image
-        image_params[valid_attr_names[ptr]][this_i] = nil
-        -- print("Image param: " .. image_params[valid_attr_names[i]])
-        ptr = ptr + 1
-    until ptr > #valid_attr_names
     local parStr = tostring(img.attributes)
+    print("\nFor image " .. src) -- New line
+
     if #img.attributes ~= 0 then
         -- Gather attributes and ensure each attribute name is valid
         local r = ""
         local name = ""
         local val = ""
         doctype_overrides = {} -- Clear record of doc-type-specific overrides
-        for ptr = 1, #img.attributes, 1 do
+        for ptr = 1, #img.attributes, 1 do -- Gather parameters from image
             -- print("Normal gather interation: " .. ptr .. "; of #img.attributes: " .. #img.attributes)
-            r = r .. "attribute item: " .. img.attributes[ptr][1] .. " - " ..
+            r =
+                r .. "Image attribute item: " .. img.attributes[ptr][1] .. " - " ..
                     img.attributes[ptr][2] .. '\n'
             name = img.attributes[ptr][1]
             val = img.attributes[ptr][2]
+            print("param: " .. name .. "; val: " .. tostring(val))
+            -- if #name > 0 and val == nil then -- Does not work because
+            --     err_msg =
+            --         err_msg .. "Value is missing from parameter '" .. name ..
+            --             "' for image '" .. src .. "'. "
+            --     print(err_msg)
+            -- end
             err = recordParam(name, val, this_i, doctype_overrides) -- Record values from image attributes
             if #err > 0 then err_msg = err_msg .. err end
         end
-        -- print("ACCUMULATED Image err_msg: " .. err_msg)
         -- print("ATTRIBUTES: " .. r)
+        for ptr = 1, #doctype_overrides, 1 do -- print all overrides
+            print("Override number " .. ptr .. " is: " ..
+                      tostring(doctype_overrides[1][1]))
+        end
         doctype_override(this_i, doctype_overrides) -- Override any param for which doc-type constraint indicated
     end
 
-    -- ptr = 1 -- Init counter
-    -- repeat -- Print complete table
-    --     v = valid_attr_names[ptr] -- Get next name from table of valid parameters
-    --     print("image_param", v, image_params[v][default_i],
-    --           image_params[v][global_i], image_params[v][this_i])
-    --     ptr = ptr + 1
-    -- until ptr > #valid_attr_names
+    ptr = 1 -- Init counter
+    repeat -- Print complete table
+        v = valid_img_attr_names[ptr] -- Get next name from table of valid parameters
+        print("image_param", v, image_params[v][default_i],
+              image_params[v][global_i], image_params[v][this_i])
+        ptr = ptr + 1
+    until ptr > #valid_img_attr_names
 
     -- Get any label embedded in caption
     i, j = string.find(tostring(img.caption[#img.caption]), "label{.+}")
@@ -412,7 +435,6 @@ function Image(img)
     if verify_entry(val,
                     {"left", "center", "right", "float-left", "float-right"}) then
         frame_position = val
-        -- print("Verified position as: " .. frame_position .. " for file " .. src)
     else
         frame_position = image_params["position"][default_i]
         err_msg = err_msg .. "Bad position ('" .. val .. "')" .. source
@@ -544,7 +566,6 @@ function Image(img)
         err_msg = err_msg .. "Bad caption style name ('" .. val .. "')" ..
                       par_source
     end
-    -- end
 
     val, par_source = getParam("cap_text_size") -- Caption text size
     if val ~= nil then
@@ -634,9 +655,32 @@ function Image(img)
             pdf_anchor_strict = image_params["pdf_anchor_strict"][default_i]
             err_msg = err_msg ..
                           "Invalid indicator of image anchor strictness ('" ..
-                          tostring(pdf_anchor_strict) .. "')" .. par_source ..
+                          tostring(val) .. "')" .. par_source ..
                           ". It should be 'true', 'false', 'yes' or 'no'.\n"
         end
+    end
+
+    val, par_source = getParam("pdf_restore_margin") -- Indicates margin should be restored after image
+    if (doctype == "pdf" or doctype == "latex") then
+        if verify_entry(val, affirm_list) then
+            pdf_restore_margin = val
+        else
+            pdf_restore_margin = image_params["pdf_restore_margin"][default_i]
+            err_msg = err_msg .. "Invalid indicator of pdf_restore_margin ('" ..
+                          tostring(val) .. "') for image " .. par_source ..
+                          ". It should be 'true', 'false', 'yes' or 'no'.\n"
+            print(err_msg)
+        end
+    end
+
+    val, par_source = getParam("pdf_header_with_next") -- Indicates margin should be restored after image
+    if tonumber(val) > 2 then
+        pdf_header_with_next = val
+    else
+        pdf_header_with_next = image_params["pdf_header_with_next"][default_i]
+        err_msg = err_msg .. "Invalid indicator of pdf_header_with_next ('" ..
+                      tostring(val) .. "') for image " .. par_source ..
+                      ". It must be 3 or more.\n"
     end
 
     -- **************************************************************************************************
@@ -724,12 +768,6 @@ function Image(img)
         else
             gfm_trailer = "\n\n"
         end
-        -- Commented code below unused as gfm ignores spans
-        -- cap_gfm = '<p width="' .. wid_percent .. '" align="' .. frame_pos ..
-        --               '">' .. '<span style="' .. cap_text_html_style ..
-        --               '"><span style="' .. cap_label_html_style .. '">' ..
-        --               cap_lbl .. label_sep1 .. "</span>" .. label_sep2 ..
-        --               cap_text .. '</span></p>'
         if (frame_pos == "center") then
             img_gfm = '<p align="' .. frame_pos .. '"><img src="' .. src ..
                           '" width="' .. wid_percent .. '"></p>'
@@ -790,6 +828,11 @@ function Image(img)
         -- Latex/PDF documents prep
     elseif FORMAT:match "latex" then -- For Latex/PDF documents
         print("Now processing latex/PDF for " .. src)
+        if pdf_restore_margin == "true" or pdf_restore_margin == "yes" then
+            pdf_restore_mar = "\\vfill"
+        else
+            pdf_restore_mar = ""
+        end
         cap_txt = "" -- Reset
         src = string.gsub(src, "%%20", " ") -- Latex requires substituting real space for '%20'
         i, j = string.find(src, ".gif") -- Warn that GIF graphics cannot be converted to latex/pdf
@@ -928,13 +971,15 @@ function Image(img)
         --           "; \ncap_text_ltx_style: " .. cap_text_ltx_style ..
         --           "\nframe_assembly: " .. frame_assembly)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
-            results = frame_assembly
+            results = frame_assembly .. '\\vspace{' .. padding_v .. 'in}' ..
+                          pdf_restore_mar
         else -- if for 'wrapfigure'
             fig_open = string.gsub(ltx_position, "X", wid_frac) -- Insert width if wrapfigure
             -- results = fig_open .. "\\vspace{" .. float_frame_comp .. "in}" ..
             --               frame_assembly .. "\\end" .. latex_figure_type
             results = fig_open .. "\\vspace{" .. float_frame_comp .. "in}" ..
-                          frame_assembly .. "\\end" .. latex_figure_type
+                          frame_assembly .. "\\end" .. latex_figure_type ..
+                          '\\vspace{' .. padding_v .. 'in}' .. pdf_restore_mar
         end
 
         -- *************************************************************************
@@ -997,7 +1042,8 @@ function Image(img)
             results = "<span style='color:red'>ERROR IN IMAGE INFORMATION - " ..
                           err_msg .. "</span>\n\n" .. results
             print("\nEncountered error: " .. err_msg .. "\n")
-        elseif FORMAT:match "html" or FORMAT:match "epub" then
+        end
+        if FORMAT:match "html" or FORMAT:match "epub" then
             print("Writing html image")
             return pandoc.RawInline('html', results) -- html or epub
         elseif FORMAT:match "gfm" then
@@ -1191,6 +1237,8 @@ function recordParam(name, value, level, overrides)
     local doctyp = ""
     local doc_specific = false
     local err = ""
+    local alt_doctype = doctype -- Accommodates ability to recognize that pdf docs are processed via latex
+    if doctype == "latex" then alt_doctype = "pdf" end
     -- print("Now am procssing entry: " .. name .. "; value: " .. value ..
     --   "; at level: " .. level)
     i, j = string.find(name, ":[_%a]+$") -- Get param without doc constraint
@@ -1201,6 +1249,8 @@ function recordParam(name, value, level, overrides)
             doctyp = string.sub(name, i, j - 1)
             if verify_entry(doctyp, doctypes) then -- Ensure doctype prefix valid
                 doc_specific = true
+                print("Verified override for spec with prefix: " .. doctyp ..
+                          "; doctype is " .. doctype)
             else
                 err = err .. "Invalid file type prefix ('" .. doctyp .. "') " ..
                           id_source(level) .. ". \n" -- Invalid
@@ -1208,14 +1258,16 @@ function recordParam(name, value, level, overrides)
                 doc_specific = false
             end
         end
-        if (doc_specific == true and doctyp == doctype) then
+        if (doc_specific == true and
+            (doctyp == real_doctype or doctyp == alt_doctype)) then
             table.insert(overrides, {nam, value})
+            print("Installed value: " .. value .. " for name: " .. nam)
         end
     else -- No doc type constraint
         nam = name
         doc_specific = false
     end
-    if verify_entry(nam, valid_attr_names) == false then
+    if verify_entry(nam, valid_img_attr_names) == false then
         err = err .. "Bad attribute name ('" .. name .. "') " ..
                   id_source(level)
         if #err > 0 then print("FOUND ERROR: " .. err) end
@@ -1226,6 +1278,61 @@ function recordParam(name, value, level, overrides)
         end
     end
     return err
+end
+
+-- **************************************************************************************************
+-- Affects latex/pdf only: Intercept headers and add latex to ensure will not be orphaned. 
+-- function Header(lev, s, attr)
+function Header(el, s, attr)
+    local sec_type -- section or subsection
+    local r = ""
+    local name = ""
+    local val = ""
+    local default = "4" -- Default value for keep with next
+    local minlines = default
+    local err_msg = "" -- Reset error message
+    local e_msg
+    print("Encountered header with attributes: " .. tostring(el.attributes))
+    if #el.attributes ~= 0 then
+        -- Gather attributes and ensure each attribute name is valid
+        for ptr = 1, #el.attributes, 1 do -- Gather parameters from image
+            name = el.attributes[ptr][1]
+            val = el.attributes[ptr][2]
+            if name == "pdf_header_with_next" then
+                if tonumber(val) > 2 then
+                    minlines = val
+                else
+                    err_msg = err_msg ..
+                                  "Parameter 'pdf_header_with_next' must be greater than 2. (Heading '" ..
+                                  stringify(el.content) .. "') "
+                end
+            else
+                err_msg = err_msg .. "Unrecognized parameter (" .. name ..
+                              ") for heading '" .. stringify(el.content) ..
+                              "'. "
+            end
+        end
+    end
+    if el.level < 2 then -- Get header level
+        sec_type = "section"
+    else
+        sec_type = "subsection"
+    end
+    if #err_msg > 0 then
+        emsg = "\\textcolor{red}{[ERROR IN HEADING INFORMATION - " .. err_msg ..
+                   "]}\n\n"
+    else
+        emsg = ""
+    end
+    if (FORMAT:match "latex") and el.level > 0 then -- Latex/PDF    -- Must be latex/pdf and cannot be title
+        results = emsg .. "\\needspace{" .. minlines .. "\\baselineskip}{" ..
+                      '\\hypertarget{' .. el.identifier .. '}{%\n\\' .. sec_type ..
+                      '{' .. stringify(el.c) .. '}\\label{' .. el.identifier ..
+                      '}}' .. "}"
+        return pandoc.RawInline('latex', results)
+    else -- if not latex/pdf
+        return nil
+    end
 end
 
 -- Check entry against simple table of allowed values and return true if valid
@@ -1254,6 +1361,9 @@ function doctype_override(level, overrides)
         if overrides[ptr] ~= nil then
             nam = overrides[ptr][1]
             image_params[nam][level] = overrides[ptr][2] -- Override non-doc-specific value
+            print("overrides[ptr][1]: " .. overrides[ptr][1] ..
+                      "Overriding param : " .. image_params[nam][this_i] ..
+                      "; overrides[ptr][2]: " .. overrides[ptr][2])
         end
         ptr = ptr + 1
     until ptr > #overrides
@@ -1342,6 +1452,7 @@ function dimToInches(val) -- Convert any dimension value into inches
     local j
     local val_dim
     local err = ""
+    -- print("VALUE: " .. tostring(val))
     i, j = string.find(val, "[%d%.]+") -- Get number
     if i ~= nil then -- If number specified
         val_num = string.sub(val, i, j)
@@ -1388,6 +1499,7 @@ return {
     traverse = 'topdown',
     {Meta = Meta}, -- Must be first
     {CodeBlock = CodeBlock},
+    {Header = Header},
     {Image = Image}
 }
 
