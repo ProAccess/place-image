@@ -847,28 +847,28 @@ function Image(img)
                     delta_r = 0 -- Offset if caption align right
                 end
                 if frame_pos == "left" then
-                    cap_md =
-                        pre_cap_md .. '<img src="./images-md/1-px" width="' ..
-                            delta_l * 100 .. '%" height="' .. cap_ht ..
-                            'px" align="left"><img src="./images-md/1-px" width="' ..
-                            (cap_mar_lrg - delta_l) * 100 .. '%" height="' ..
-                            cap_ht .. 'px" align="right">' .. cp .. '</p>'
+                    cap_md = pre_cap_md ..
+                                 '<img src="./images-md/1-px.png" width="' ..
+                                 delta_l * 100 .. '%" height="' .. cap_ht ..
+                                 'px" align="left"><img src="./images-md/1-px.png" width="' ..
+                                 (cap_mar_lrg - delta_l) * 100 .. '%" height="' ..
+                                 cap_ht .. 'px" align="right">' .. cp .. '</p>'
                 elseif (frame_pos == "center") then
-                    cap_md =
-                        pre_cap_md .. '<img src="./images-md/1-px" width="' ..
-                            (cap_mar_eq - mar_dif_half + delta_l) * 100 ..
-                            '%" height="' .. cap_ht ..
-                            'px" align="left"><img src="./images-md/1-px" width="' ..
-                            (cap_mar_eq - mar_dif_half + delta_r) * 100 ..
-                            '%" height="' .. cap_ht .. 'px" align="right">' ..
-                            cp .. "</p>"
+                    cap_md = pre_cap_md ..
+                                 '<img src="./images-md/1-px.png" width="' ..
+                                 (cap_mar_eq - mar_dif_half + delta_l) * 100 ..
+                                 '%" height="' .. cap_ht ..
+                                 'px" align="left"><img src="./images-md/1-px.png" width="' ..
+                                 (cap_mar_eq - mar_dif_half + delta_r) * 100 ..
+                                 '%" height="' .. cap_ht .. 'px" align="right">' ..
+                                 cp .. "</p>"
                 elseif frame_pos == "right" then
-                    cap_md =
-                        pre_cap_md .. '<img src="./images-md/1-px" width="' ..
-                            delta_r * 100 .. '%" height="' .. cap_ht ..
-                            'px" align="right"><img src="./images-md/1-px" width="' ..
-                            (cap_mar_lrg - delta_r) * 100 .. '%" height="' ..
-                            cap_ht .. '" align="left">' .. cp .. '</p>'
+                    cap_md = pre_cap_md ..
+                                 '<img src="./images-md/1-px.png" width="' ..
+                                 delta_r * 100 .. '%" height="' .. cap_ht ..
+                                 'px" align="right"><img src="./images-md/1-px.png" width="' ..
+                                 (cap_mar_lrg - delta_r) * 100 .. '%" height="' ..
+                                 cap_ht .. '" align="left">' .. cp .. '</p>'
                 end
                 if (cap_position == "above") then
                     results_md = cap_md .. img_md
@@ -889,7 +889,7 @@ function Image(img)
                 end
                 results_md = '<figure><img src="' .. src .. '" align="' ..
                                  frame_pos .. '" width="' .. wid_percent ..
-                                 '"><img src="./images-md/1-px" width="' ..
+                                 '"><img src="./images-md/1-px.png" width="' ..
                                  padding_h * pixels_per_in .. '" height="' ..
                                  cap_ht .. 'px" align="' .. frame_pos .. '">' ..
                                  fc .. '</figure>'

@@ -6,7 +6,7 @@ documents created by Pandoc from markdown documents. Now you can specify
 a variety of image and caption parameters directly within markdown
 images statements. Here are two brief examples:
 
-<p align="left"><img src="./images-md/1-px" width="5.0%" height="0.0px" align="left"><img src="./images-md/1-px" width="5.0%" height="0.0px" align="right"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '></span></span></p><p align="center"><img src="./images-md/examples.png" width="100.0%"></p>
+<p align="left"><img src="./images-md/1-px.png" width="5.0%" height="0.0px" align="left"><img src="./images-md/1-px.png" width="5.0%" height="0.0px" align="right"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '></span></span></p><p align="center"><img src="./images-md/examples.png" width="100.0%"></p>
 
 # Document formats supported
 
@@ -317,7 +317,7 @@ to have *LaTex* installed. Click
 You should place your markdown document into a folder along with the
 place-image.lua pandoc filter and supporting folders.
 
-<p align="left"><img src="./images-md/1-px" width="23.0%" height="32.4px" align="left"><img src="./images-md/1-px" width="23.0%" height="32.4px" align="right"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 1:</span> This illustrates how your files should be organized.</span></p><p align="center"><img src="./images-md/files-organization.png" width="60.0%"></p>
+<p align="left"><img src="./images-md/1-px.png" width="23.0%" height="32.4px" align="left"><img src="./images-md/1-px.png" width="23.0%" height="32.4px" align="right"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 1:</span> This illustrates how your files should be organized.</span></p><p align="center"><img src="./images-md/files-organization.png" width="60.0%"></p>
 
 # Invoking filter from Pandoc
 
@@ -338,7 +338,7 @@ output:
 ---
 </code></pre>
 
-<figure><img src="./images-md/happy-face-doc.png" align="right" width="40.0%"><img src="./images-md/1-px" width="14.4" height="86.4px" align="right"><figcaption style="margin-left:10%"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 2:</span> Now you can place and caption your images and illustrations wherever and however you like!</span><br><br></figcaption></figure>
+<figure><img src="./images-md/happy-face-doc.png" align="right" width="40.0%"><img src="./images-md/1-px.png" width="14.4" height="86.4px" align="right"><figcaption style="margin-left:10%"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 2:</span> Now you can place and caption your images and illustrations wherever and however you like!</span><br><br></figcaption></figure>
 
 # Considerations for floating images in markdown/gfm documents
 
@@ -355,7 +355,9 @@ Should you find a caption failing to be contained properly, the
 parameter *md_cap_ht_adj* is provided to allow tweaking the invisible
 container height. Try any value between -20 and 20. For example:
 
-`md_cap_ht_adj=3` `md_cap_ht_adj=-4` \< <a name="using-wrapfig"></a>
+`md_cap_ht_adj=3` `md_cap_ht_adj=-4`
+
+<a name="using-wrapfig"></a>
 
 # Special considerations for floating images in latex/pdf documents
 

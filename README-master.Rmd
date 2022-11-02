@@ -299,7 +299,7 @@ Should you find a caption failing to be contained properly, the parameter *md_ca
 
 ``md_cap_ht_adj=3`` 
 ``md_cap_ht_adj=-4``
-<
+
 <a name="using-wrapfig"></a>
 
 # Special considerations for floating images in latex/pdf documents{#using-wrapfig}
