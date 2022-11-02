@@ -79,6 +79,7 @@ The place-image filter allows you to specify these parameters:
 - close_frame -- (PDF/latex documents only) — Fixes occasional failure by latex to close the wrapping-frame below an image.
 - adjust_frame_ht -- (PDF/latex documents only) — Used to compensate for inaccurate wraps in Pandoc conversions to pdf and latex formats. It has no effect on other formats.
 - pdf_anchor_strict -- (PDF/latex documents only) — Indicates if pdf/latex image may be moved automatically if too close to a top/bottom margin.
+- md_cap_ht_adj -- (Markdown/gfm documents only) — Allows tweaking the height of the vertical caption container, should you find a caption failing to be contained properly.
 
 ## For headings
 
@@ -212,6 +213,7 @@ or
 | close_frame | (PDF/latex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
 | adjust_frame_ht  | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., "10", "15", etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., "pdf:width=42%" instead of "width=45%.") |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf:adjust_frame_ht=15, etc.  |
 | pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. Normally, this should not be used. | false | Examples: pdf_anchor_strict=true |
+| md_cap_ht_adj | (Markdown/gfm documents only) — Allows tweaking the height of the vertical caption container, should you find a caption failing to be contained properly. Values may be between -20 and 20.|  | Examples: md_cap_ht_adj=3, md_cap_ht_adj=-4 |
 
 ### For headings
 
@@ -284,11 +286,23 @@ output:
 ---
 </code></pre>
 
-![Now you can place and caption your images and illustrations wherever and however you like!](./images-md/happy-face-doc.png){width=40% cap_position=above cap_text_align=center}
+![Now you can place and caption your images and illustrations wherever and however you like!](./images-md/happy-face-doc.png){width=40% position=float-right cap_position=above cap_text_align=center}
 
+
+# Considerations for floating images in markdown/gfm documents{#using-md}
+
+Natively, Pandoc does not create floated images for markdown documents and some *flavors* of markdown further limit image and caption formatting. The place-image filter does allow images to be floated with most markdown *flavors* but with some limitations.
+
+Any captions for floated images may appear only along-side, rather than above or below. Also, precise spacing with *v-padding* and *h-padding* may be disabled.
+
+Should you find a caption failing to be contained properly, the parameter *md_cap_ht_adj* is provided to allow tweaking the invisible container height. Try any value between -20 and 20. For example:
+
+``md_cap_ht_adj=3`` 
+``md_cap_ht_adj=-4``
+<
 <a name="using-wrapfig"></a>
 
-# Special considerations for floated images in latex/pdf documents{#using-wrapfig}
+# Special considerations for floating images in latex/pdf documents{#using-wrapfig}
 
 ## Include these packages
 

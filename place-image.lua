@@ -1,4 +1,6 @@
---[[  --  Copyright 2022 George Markle - 22/10/28
+--[[  --  Copyright 2022 George Markle - 22/11/02
+Excellent code to extract image size by MikuAuahDark
+
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
 
 ]] -- Global variables that must be available for both Meta and Image processing
@@ -38,17 +40,21 @@ local valid_img_attr_names =
         "cap_label", -- If specified, can be any, e.g., "Figure", "Photo", "My Fantatic Table", etc.
         "cap_label_style", -- If specified: plain, italic, bold, bold-oblique, bold-italic. Default is plain.
         "cap_label_sep", -- If specified, indicates separater between caption label number and caption, e.g., ": "
-        "pdf_adjust_lines", -- For latex/pdf: - for cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
-        "pdf_restore_margin", -- For latex/pdf: Latex may not restore margin below floated image, leaving white space. This will restore margin.
-        "pdf_header_with_next", -- For latex/pdf: If header orphaned, move to next page if within x lines of bottom.
-        "pdf_anchor_strict" -- Indicates whether image may be moved to nearby location to avoid margin intrusion ()
+        "adjust_frame_ht", -- For latex/pdf: - for cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
+        "close_frame", -- For latex/pdf: Latex may not restore margin below floated image, leaving white space. This will restore margin.
+        "keep_with_next", -- For latex/pdf: If header orphaned, move to next page if within x lines of bottom.
+        "pdf_anchor_strict", -- Indicates whether image may be moved to nearby location to avoid margin intrusion ()
+        "md_cap_ht_adj" -- Adjustment to vertical caption container for markdown documents.
     }
-local image_params = {} -- Will contain image placement parameters {["param"],{var_default, val_global, val_this}}
+local image_params = {} -- Contains image placement parameters {["param"],{default, global, this}}
 local default_i = 1 -- 'Default' column of image params table
 local global_i = 2 -- 'Global' column of image params table
 local this_i = 3 -- 'This image-specific' column of image params table
 
 local src -- Image source
+local img_wd -- Image width from file
+local img_ht -- Image height from file
+local img_ratio -- Image aspect ratio
 local width_entered -- Width as entered
 local width_in -- Image width in inches
 local columns -- Divisor by which width will be divided to fit within one of multiple table column cells
@@ -75,10 +81,10 @@ local ltx_text_align -- Latex/PDF caption text alignment
 local ltx_cap_l_wd
 local ltx_cap_r_wd
 local ltx_cap_h_pos
-local pdf_adjust_lines -- 'Adjustment' value to shorten latex/pdf image wrap area.
+local adjust_frame_ht -- 'Adjustment' value to shorten latex/pdf image wrap area.
 local pdf_anchor_strict -- Indicates strictness of latex image anchor
 local pdf_restore_mar -- Indicates altered margin following image should be restored
-local pdf_header_with_next -- If fewer than this number of lines left before bottom, move to next page
+local keep_with_next -- If fewer than this number of lines left before bottom, move to next page
 local cap_docx_ind_l = 0
 local cap_docx_ind_r = 0
 local cap_html = ""
@@ -105,7 +111,7 @@ local label_sep1 -- 1st label separater part will have same style as label
 local label_sep2 -- 2nd label separater part will have same style as caption
 
 local cap_width -- string as percentage
-local cap_wid_as_prcent -- percent converted to fraction
+local cap_wid_as_frac -- percent converted to fraction
 local cap_space -- distance between caption and image
 local cap_width_in -- caption width in inches
 local cap_h_position
@@ -210,10 +216,11 @@ function Meta(meta)
         ["cap_label"] = {"", nil, nil},
         ["cap_label_sep"] = {": ", nil, nil},
         ["cap_label_style"] = {"plain", nil, nil},
-        ["pdf_adjust_lines"] = {nil, nil, nil},
+        ["adjust_frame_ht"] = {nil, nil, nil},
         ["pdf_anchor_strict"] = {"false", nil, nil},
-        ["pdf_restore_margin"] = {"false", nil, nil},
-        ["pdf_header_with_next"] = {"4", nil, nil}
+        ["close_frame"] = {"false", nil, nil},
+        ["keep_with_next"] = {"4", nil, nil},
+        ["md_cap_ht_adj"] = {"0", nil, nil}
     }
     reset_img_params() -- Init variables before next image
 
@@ -293,7 +300,6 @@ function Meta(meta)
             ptr = j
             value = string.match(string.sub(glParStr, j + 1, j + 50),
                                  "[%%%-%+%_%w%.%:%s]+")
-            -- print("Just got Meta VAL: " .. tostring(value))
             if value == nil then
                 done = true
                 break
@@ -307,9 +313,10 @@ function Meta(meta)
     else
         print("No 'imageplacement' statement found in Meta section.")
     end
-    for ptr = 1, #doctype_overrides, 1 do -- print all overrides
-        print("Global override number " .. ptr .. "is: " .. doctype_overrides[1])
-    end
+    -- for ptr = 1, #doctype_overrides, 1 do -- print all overrides
+    --     print("Global override number " .. ptr .. " is: " ..
+    --               doctype_overrides[ptr][1][2])
+    -- end
     doctype_override(global_i, doctype_overrides) -- Override any parameters where doc-specific override indicated
     return meta
 end
@@ -335,8 +342,10 @@ function Image(img)
     src = img.src
     local err = ""
     local pos_center -- Horizontal center of image
+    local float -- Float status; true or false
     cap_text = stringify(img.caption)
     image_id = img.label
+
     html_style = "" -- Reset
     cap_html_style = ""
     docx_cap_par_style = ""
@@ -368,8 +377,10 @@ function Image(img)
         err_msg = "" -- Reset error message. Allows including Meta global errors in first error msg
     end
     local parStr = tostring(img.attributes)
-    print("\nFor image " .. src) -- New line
+    -- print("\nFor image " .. src) -- New line
 
+    img_wd, img_ht = GetImageWidthHeight(src) -- Read image dimensions from file
+    img_ratio = img_ht / img_wd -- ratio
     if #img.attributes ~= 0 then
         -- Gather attributes and ensure each attribute name is valid
         local r = ""
@@ -377,37 +388,24 @@ function Image(img)
         local val = ""
         doctype_overrides = {} -- Clear record of doc-type-specific overrides
         for ptr = 1, #img.attributes, 1 do -- Gather parameters from image
-            -- print("Normal gather interation: " .. ptr .. "; of #img.attributes: " .. #img.attributes)
             r =
                 r .. "Image attribute item: " .. img.attributes[ptr][1] .. " - " ..
                     img.attributes[ptr][2] .. '\n'
             name = img.attributes[ptr][1]
             val = img.attributes[ptr][2]
-            print("param: " .. name .. "; val: " .. tostring(val))
-            -- if #name > 0 and val == nil then -- Does not work because
-            --     err_msg =
-            --         err_msg .. "Value is missing from parameter '" .. name ..
-            --             "' for image '" .. src .. "'. "
-            --     print(err_msg)
-            -- end
             err = recordParam(name, val, this_i, doctype_overrides) -- Record values from image attributes
             if #err > 0 then err_msg = err_msg .. err end
-        end
-        -- print("ATTRIBUTES: " .. r)
-        for ptr = 1, #doctype_overrides, 1 do -- print all overrides
-            print("Override number " .. ptr .. " is: " ..
-                      tostring(doctype_overrides[1][1]))
         end
         doctype_override(this_i, doctype_overrides) -- Override any param for which doc-type constraint indicated
     end
 
-    ptr = 1 -- Init counter
-    repeat -- Print complete table
-        v = valid_img_attr_names[ptr] -- Get next name from table of valid parameters
-        print("image_param", v, image_params[v][default_i],
-              image_params[v][global_i], image_params[v][this_i])
-        ptr = ptr + 1
-    until ptr > #valid_img_attr_names
+    -- ptr = 1 -- Init counter
+    -- repeat -- Print complete table
+    --     v = valid_img_attr_names[ptr] -- Get next name from table of valid parameters
+    --     print("image_param", v, image_params[v][default_i],
+    --           image_params[v][global_i], image_params[v][this_i])
+    --     ptr = ptr + 1
+    -- until ptr > #valid_img_attr_names
 
     -- Get any label embedded in caption
     i, j = string.find(tostring(img.caption[#img.caption]), "label{.+}")
@@ -447,7 +445,6 @@ function Image(img)
     end
 
     val, par_source = getParam("columns") -- Width divisor for adjusting image width   
-    -- print("val: " .. val .. "; tonumber(val): " .. tonumber(val) .. "; ")
     if val ~= nil then
         if tonumber(val) >= 1 and tonumber(val) <= 20 then
             columns = math.floor(tonumber(val))
@@ -494,8 +491,8 @@ function Image(img)
     val = getParam("cap_width") -- Caption width
     cap_width = val
     i, j = string.find(tostring(val), "%d+") -- Get dimension
-    cap_wid_as_prcent = tonumber(string.sub(val, i, j)) / 100 -- Get cap width as percentage
-    cap_width_in = cap_wid_as_prcent * width_in
+    cap_wid_as_frac = tonumber(string.sub(val, i, j)) / 100 -- Get cap width as percentage
+    cap_width_in = cap_wid_as_frac * width_in
     cap_html_style = cap_html_style .. "width:" .. cap_width .. "; "
 
     val, par_source = getParam("cap_space") -- Space between caption and image
@@ -631,19 +628,18 @@ function Image(img)
     else
         cap_label_sep = ""
     end
-    -- print("Just retrieved cap_label_sep of: " .. cap_label_sep)
 
-    val, par_source = getParam("pdf_adjust_lines") -- Latex/PDF imgage wrap height adjust - A text-wrapped Latex/PDF image sometimes will have an extended wrap area at the bottom. In such cases, this provides for an 'adjustment' value to shorten/lengthen wrap area. 
-    pdf_adjust_lines = val
-    if pdf_adjust_lines ~= nil then
-        if type(pdf_adjust_lines) ~= integer and
-            (tonumber(pdf_adjust_lines) < -99 or tonumber(pdf_adjust_lines) > 99) then
+    val, par_source = getParam("adjust_frame_ht") -- Latex/PDF imgage wrap height adjust - A text-wrapped Latex/PDF image sometimes will have an extended wrap area at the bottom. In such cases, this provides for an 'adjustment' value to shorten/lengthen wrap area. 
+    adjust_frame_ht = val
+    if adjust_frame_ht ~= nil then
+        if type(adjust_frame_ht) ~= integer and
+            (tonumber(adjust_frame_ht) < -99 or tonumber(adjust_frame_ht) > 99) then
             err_msg = err_msg .. "Bad latex height adjustment value ('" ..
-                          tostring(pdf_adjust_lines) .. "')" .. par_source ..
+                          tostring(adjust_frame_ht) .. "')" .. par_source ..
                           ". It should be an integer, e.g., '10'.\n"
-            pdf_adjust_lines = nil
+            adjust_frame_ht = nil
         else
-            pdf_adjust_lines = tonumber(pdf_adjust_lines)
+            adjust_frame_ht = tonumber(adjust_frame_ht)
         end
     end
 
@@ -660,32 +656,51 @@ function Image(img)
         end
     end
 
-    val, par_source = getParam("pdf_restore_margin") -- Indicates margin should be restored after image
+    val, par_source = getParam("close_frame") -- Indicates margin should be restored after image
     if (doctype == "pdf" or doctype == "latex") then
         if verify_entry(val, affirm_list) then
-            pdf_restore_margin = val
+            close_frame = val
         else
-            pdf_restore_margin = image_params["pdf_restore_margin"][default_i]
-            err_msg = err_msg .. "Invalid indicator of pdf_restore_margin ('" ..
+            close_frame = image_params["close_frame"][default_i]
+            err_msg = err_msg .. "Invalid indicator of close_frame ('" ..
                           tostring(val) .. "') for image " .. par_source ..
                           ". It should be 'true', 'false', 'yes' or 'no'.\n"
             print(err_msg)
         end
     end
 
-    val, par_source = getParam("pdf_header_with_next") -- Indicates margin should be restored after image
+    val, par_source = getParam("keep_with_next") -- Indicates margin should be restored after image
     if tonumber(val) > 2 then
-        pdf_header_with_next = val
+        keep_with_next = val
     else
-        pdf_header_with_next = image_params["pdf_header_with_next"][default_i]
-        err_msg = err_msg .. "Invalid indicator of pdf_header_with_next ('" ..
+        keep_with_next = image_params["keep_with_next"][default_i]
+        err_msg = err_msg .. "Invalid indicator of keep_with_next ('" ..
                       tostring(val) .. "') for image " .. par_source ..
                       ". It must be 3 or more.\n"
+    end
+
+    val, par_source = getParam("md_cap_ht_adj") -- Caption text size
+    if val ~= nil then
+        if not (tonumber(val) < -20 or tonumber(val) > 21) then
+            md_cap_ht_adj = val -- Get caption font size
+        else
+            md_cap_ht_adj = image_params["md_cap_ht_adj"][default_i]
+            err_msg = err_msg ..
+                          "Your markdown caption vertical containment adjustment ('" ..
+                          val .. "') must be between -20 and +20 for image " ..
+                          par_source
+        end
     end
 
     -- **************************************************************************************************
     -- All entered values have been gathered. Now we process values and prep for output.
 
+    i, j = string.find(frame_position, "float") -- Is figure floated?
+    if i == nil then -- If caption not floated 
+        float = false
+    else
+        float = true
+    end
     -- Get width values
     wd = getParam("width")
     i, j = string.find(wd, "%%") -- If width expressed as percentage, use that value
@@ -729,7 +744,6 @@ function Image(img)
     -- Get caption components
     if cap_label ~= nil and cap_label ~= "" then -- If figure type label specified, e.g., 'Figure', then compose numbered caption label
         cap_label_sep = string.gsub(cap_label_sep, "_", " ") -- Enables space char in separator entered as "\_"
-        -- print("Examining cap_label_sep: " .. cap_label_sep)
         cap_lbl =
             getParam("cap_label") .. " " .. -- Compose numbered caption label
             cap_labels[getParam("cap_label")] -- Yes, so record
@@ -759,68 +773,131 @@ function Image(img)
     -- HTML/Epub/markdown documents prep
     if (FORMAT:match "html" or FORMAT:match "epub" or FORMAT:match "gfm" or
         FORMAT:match "mark.*") then -- For html or markdown documents
-        -- Define github md style
-        cap_gfm = '<p width="' .. wid_percent .. '" align="' .. frame_pos ..
-                      '">' .. cap_lbl .. cap_label_sep .. cap_text .. '</p>'
-        if wid_percent ~= "100%" and wid_percent ~= "100.0%" then
-            gfm_trailer =
-                '<br />\n<img src="./images-md/space.png" width="100%" height="1px"><br />\n'
-        else
-            gfm_trailer = "\n\n"
-        end
-        if (frame_pos == "center") then
-            img_gfm = '<p align="' .. frame_pos .. '"><img src="' .. src ..
-                          '" width="' .. wid_percent .. '"></p>'
-        else
-            img_gfm = '<img src="' .. src .. '" width="' .. wid_percent ..
-                          '" align="' .. frame_pos .. '">'
-        end
+
+        -- Get caption html
+        cp = "<span style='" .. cap_text_html_style .. "'><span style='" ..
+                 cap_label_html_style .. "'>" .. cap_lbl .. label_sep1 ..
+                 "</span>" .. label_sep2 .. cap_text .. "</span>"
+
         -- Define html style
         html_style = html_style .. "width:" .. width_entered .. "; " -- Add width to html style
         if (cap_position == "above") then
             if #cap_text > 0 then
-                cap_html =
-                    "<div style='" .. cap_html_style .. "padding-bottom:" ..
-                        dimToInches(getParam("v_padding")) * pixels_per_in ..
-                        "px'><span style='" .. cap_text_html_style ..
-                        "'><span style='" .. cap_label_html_style .. "'>" ..
-                        cap_lbl .. label_sep1 .. "</span>" .. label_sep2 ..
-                        cap_text .. "</span></div>"
-                cap_gfm = cap_gfm .. '\n'
+                cap_html = -- Place within div
+                "<div style='" .. cap_html_style .. "padding-bottom:" ..
+                    dimToInches(getParam("v_padding")) * pixels_per_in .. "px'>" ..
+                    cp .. "</div>"
+                -- cap_md = cap_md .. '\n'
             else
                 cap_html = ""
-                cap_gfm = ""
+                -- cap_md = ""
             end
             results_html =
                 "<div id='" .. img_label .. "' style='" .. html_style .. "'>" ..
                     cap_html .. "<img src='" .. src .. "' width='100%'/></div>"
-            results_gfm = cap_gfm .. img_gfm .. gfm_trailer
         elseif (cap_position == "below") then
             if #cap_text > 0 then
                 cap_html = "<div style='" .. cap_html_style .. "padding-top:" ..
                                dimToInches(getParam("v_padding")) *
-                               pixels_per_in .. "px'><span style='" ..
-                               cap_text_html_style .. "'><span style='" ..
-                               cap_label_html_style .. "'>" .. cap_lbl ..
-                               label_sep1 .. "</span>" .. label_sep2 .. cap_text ..
-                               "</span></div>"
-                -- cap_gfm = '\n\n<br />\n\n' .. cap_gfm
-                cap_gfm = '\n\n<br />\n\n' .. cap_gfm
+                               pixels_per_in .. "px'>" .. cp .. "</div>"
+                -- cap_md = '\n\n<br />\n\n' .. cap_md
+                -- cap_md = '\n\n<br />\n\n' .. cap_md
             else
                 cap_html = ""
-                cap_gfm = ""
+                -- cap_md = ""
             end
             results_html =
                 "<div id='" .. img_label .. "' style='" .. html_style ..
                     "'><img src='" .. src .. "' width='100%'/>" .. cap_html ..
                     "</div>"
-            results_gfm = img_gfm .. cap_gfm .. gfm_trailer
+            results = results_html
         end
-        if FORMAT:match "gfm" or FORMAT:match "mark.*" then -- For markdown documents
-            print("Returning results for gfm: " .. results_gfm)
-            results = results_gfm
+
+        -- Markdown documents prep
+        if FORMAT:match "mark.*" or FORMAT:match "gfm" then -- For markdown documents
+            img_md = '<p align="' .. frame_pos .. '"><img src="' .. src ..
+                         '" width="' .. wid_percent .. '"></p>'
+            pre_cap_md = '<p align="' .. cap_text_align .. '">'
+            cap_md = pre_cap_md .. cp .. "</p>" -- Default
+            cap_mar_eq = (1 - wid_frac * cap_wid_as_frac) / 2 -- Caption margin for centered
+            mar_dif = ((wid_frac - wid_frac * cap_wid_as_frac)) -- Centered caption L margin
+            mar_dif_half = mar_dif / 2
+            cap_mar_lrg = 1 - (wid_frac * cap_wid_as_frac) -- Caption R margin
+
+            ch_per_in = 16 -- Approximated char per inches
+            px_per_line = 20 -- Approximated line leading
+            lns = #cap_text / (cap_width_in * ch_per_in)
+            cap_ht = math.floor(lns * px_per_line) *
+                         (1.8 + tonumber(md_cap_ht_adj) / 10)
+            -- print("#cap_text: " .. #cap_text .. "; cap_width_in: " ..
+            --           cap_width_in .. "; lns: " .. lns .. "; cap_ht: " .. cap_ht)
+
+            -- if string.match(frame_position, "float") == nil then -- If not floated image
+            if not float then -- Not floated
+                delta_l = 0
+                delta_r = 0
+                if cap_h_position == "left" then
+                    delta_l = 0 -- Offset if caption align left
+                    delta_r = mar_dif
+                elseif cap_h_position == "center" then
+                    delta_l = mar_dif_half -- Offset if caption align center
+                    delta_r = mar_dif_half
+                elseif cap_h_position == "right" then
+                    delta_l = mar_dif
+                    delta_r = 0 -- Offset if caption align right
+                end
+                if frame_pos == "left" then
+                    cap_md =
+                        pre_cap_md .. '<img src="./images-md/1-px" width="' ..
+                            delta_l * 100 .. '%" height="' .. cap_ht ..
+                            'px" align="left"><img src="./images-md/1-px" width="' ..
+                            (cap_mar_lrg - delta_l) * 100 .. '%" height="' ..
+                            cap_ht .. 'px" align="right">' .. cp .. '</p>'
+                elseif (frame_pos == "center") then
+                    cap_md =
+                        pre_cap_md .. '<img src="./images-md/1-px" width="' ..
+                            (cap_mar_eq - mar_dif_half + delta_l) * 100 ..
+                            '%" height="' .. cap_ht ..
+                            'px" align="left"><img src="./images-md/1-px" width="' ..
+                            (cap_mar_eq - mar_dif_half + delta_r) * 100 ..
+                            '%" height="' .. cap_ht .. 'px" align="right">' ..
+                            cp .. "</p>"
+                elseif frame_pos == "right" then
+                    cap_md =
+                        pre_cap_md .. '<img src="./images-md/1-px" width="' ..
+                            delta_r * 100 .. '%" height="' .. cap_ht ..
+                            'px" align="right"><img src="./images-md/1-px" width="' ..
+                            (cap_mar_lrg - delta_r) * 100 .. '%" height="' ..
+                            cap_ht .. '" align="left">' .. cp .. '</p>'
+                end
+                if (cap_position == "above") then
+                    results_md = cap_md .. img_md
+                else
+                    results_md = img_md .. cap_md
+                end
+            else -- Image floated
+                if frame_pos == "left" then
+                    al = "right"
+                else
+                    al = "left"
+                end
+                if #cap_text > 0 then -- If caption
+                    fc = '<figcaption style="margin-' .. al .. ':' .. 10 ..
+                             '%">' .. cp .. '<br><br></figcaption>'
+                else
+                    fc = ""
+                end
+                results_md = '<figure><img src="' .. src .. '" align="' ..
+                                 frame_pos .. '" width="' .. wid_percent ..
+                                 '"><img src="./images-md/1-px" width="' ..
+                                 padding_h * pixels_per_in .. '" height="' ..
+                                 cap_ht .. 'px" align="' .. frame_pos .. '">' ..
+                                 fc .. '</figure>'
+            end
+        end
+        if FORMAT:match "mark.*" or FORMAT:match "gfm" then -- For markdown documents
+            results = results_md
         else
-            print("Returning results for html: " .. results_html)
             results = results_html
         end
 
@@ -828,7 +905,7 @@ function Image(img)
         -- Latex/PDF documents prep
     elseif FORMAT:match "latex" then -- For Latex/PDF documents
         print("Now processing latex/PDF for " .. src)
-        if pdf_restore_margin == "true" or pdf_restore_margin == "yes" then
+        if close_frame == "true" or close_frame == "yes" then
             pdf_restore_mar = "\\vfill"
         else
             pdf_restore_mar = ""
@@ -841,8 +918,8 @@ function Image(img)
                           ") cannot be used when creating Latex or PDF files. Please substitute a '.png, '.jpg', or other graphic file.\n"
             src = "./images-md/Cannot use GIF for pdf.png"
         end
-        if pdf_adjust_lines ~= nil then -- If wrap lines adjustment specified
-            ltx_adjust_lns = "[" .. pdf_adjust_lines .. "]" -- Compose code for it
+        if adjust_frame_ht ~= nil then -- If wrap lines adjustment specified
+            ltx_adjust_lns = "[" .. adjust_frame_ht .. "]" -- Compose code for it
         else
             ltx_adjust_lns = ""
         end
@@ -872,9 +949,6 @@ function Image(img)
         }
         ltx_position = ltx_positions[frame_position][1]
         ltx_cap_h_pos = ltx_positions[frame_position][2]
-        -- print(
-        --     "ltx_position: " .. ltx_position .. "; ltx_pos: " .. ltx_cap_h_pos ..
-        --         "; frame_position: " .. frame_position)
         i, j = string.find(ltx_position, "{%a+}") -- Get object type: 'figure' or 'wrapfigure'
         latex_figure_type = string.sub(ltx_position, i, j) -- Extract type
         if latex_figure_type == "{figure}" or columns > 1 then -- if for unfloated 'figure' or image within table
@@ -889,16 +963,16 @@ function Image(img)
             ltx_cap_l_wd = 0
             ltx_cap_r_wd = 0
         elseif cap_h_position == "right" then
-            ltx_cap_l_wd = 1 - cap_wid_as_prcent
+            ltx_cap_l_wd = 1 - cap_wid_as_frac
             ltx_cap_r_wd = 0
         else
-            ltx_cap_l_wd = 0.5 - cap_wid_as_prcent / 2
+            ltx_cap_l_wd = 0.5 - cap_wid_as_frac / 2
             ltx_cap_r_wd = 0
         end
         -- print(
         --     "GRAPHICS - ltx_cap_l_wd: " .. ltx_cap_l_wd .. "; ltx_cap_r_wd: " ..
         --         ltx_cap_r_wd .. "; graphic_siz_frac: " .. graphic_siz_frac ..
-        --         "; cap_wid_as_prcent: " .. cap_wid_as_prcent)
+        --         "; cap_wid_as_frac: " .. cap_wid_as_frac)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
             float_frame_comp = 0
             if (cap_position == "above") then
@@ -940,7 +1014,7 @@ function Image(img)
             cap_row = '\\vspace{' .. cap_pdg_above .. 'in}' .. lnbr_above ..
                           '\\begin{minipage}{' .. ltx_cap_l_wd ..
                           '\\linewidth}{~}\\end{minipage}\\begin{minipage}{' ..
-                          cap_wid_as_prcent .. '\\linewidth}' ..
+                          cap_wid_as_frac .. '\\linewidth}' ..
                           ltx_cap_text_alignment[cap_text_align] .. cap_txt ..
                           '\\end{minipage}\\begin{minipage}{' .. ltx_cap_r_wd ..
                           '\\linewidth}{~}\\end{minipage}' .. '\\vspace{' ..
@@ -964,12 +1038,6 @@ function Image(img)
                     "\\linewidth" .. graphic_pos .. "]{" .. src .. "}" ..
                     cap_row .. "\\end{minipage}\n\\end{" .. ltx_cap_h_pos .. "}"
         end
-        -- print("latex_figure_type: " .. latex_figure_type .. "; width_in: " ..
-        --           width_in .. "; graphic_siz_frac: " .. graphic_siz_frac ..
-        --           "; wid_frac: " .. wid_frac .. "; cap_h_position: " ..
-        --           cap_h_position .. "; cap_text_align: " .. cap_text_align ..
-        --           "; \ncap_text_ltx_style: " .. cap_text_ltx_style ..
-        --           "\nframe_assembly: " .. frame_assembly)
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
             results = frame_assembly .. '\\vspace{' .. padding_v .. 'in}' ..
                           pdf_restore_mar
@@ -988,8 +1056,9 @@ function Image(img)
         docx_padding_h = math.floor(padding_h * twips_per_in) -- default printed doc horizontal padding in inches between image and text
         docx_padding_v = math.floor(padding_v * twips_per_in)
         docx_cap_space = cap_space * twips_per_in
-        i, j = string.find(frame_position, "float") -- Is figure floated?
-        if i == nil or columns > 1 then -- If caption not floated or image in table row cell w/other images
+        -- i, j = string.find(frame_position, "float") -- Is figure floated?
+        -- if i == nil or columns > 1 then -- If caption not floated or image in table row cell w/other images
+        if not float or columns > 1 then -- If caption not floated or image in table row cell w/other images
             docx_img_frame_wd = pg_text_width / columns
         else -- Figure is floated
             docx_img_frame_wd = width_in
@@ -1015,12 +1084,6 @@ function Image(img)
             cap_docx_ind_l = docx_img_frame_wd - cap_width_in / columns
             cap_docx_ind_r = 0
         end
-        -- print("width_in: " .. width_in .. "; docx_img_frame_wd: " ..
-        --           docx_img_frame_wd .. "; pos_center: " .. pos_center ..
-        --           "; frame_position: " .. frame_position .. "; cap_docx_ind_l: " ..
-        --           cap_docx_ind_l .. "; cap_docx_ind_r: " .. cap_docx_ind_r ..
-        --           "; cap_h_position: " .. cap_h_position .. "; frame_pos: " ..
-        --           frame_pos)
         if #cap_text_docx_style > 0 then -- If specifying caption format then
             cap_text_docx_style = "<w:rPr>" .. cap_text_docx_style .. '</w:rPr>'
         else
@@ -1078,12 +1141,12 @@ function Image(img)
         else
             er_msg = ""
         end
-        i, j = string.find(frame_position, "float") -- Is figure floated?
-        if i == nil then -- If caption not floated 
-            float = false
-        else
-            float = true
-        end
+        -- i, j = string.find(frame_position, "float") -- Is figure floated?
+        -- if i == nil then -- If caption not floated 
+        --     float = false
+        -- else
+        --     float = true
+        -- end
         if (cap_position == "above") then -- If caption above
             if #cap_text > 0 then -- If caption
                 space_above_caption = docx_padding_v
@@ -1119,11 +1182,6 @@ function Image(img)
                                  docx_text_align_xml
         img.attributes.width = inchesToPixels(width_in / columns) - padding_h *
                                    2 -- Ensure width expressed as pixels
-        -- print("space_above_image: " .. space_above_image ..
-        --           "; space_above_caption: " .. tostring(space_above_caption) ..
-        --           "space_below_caption: " .. tostring(space_below_caption) ..
-        --           "; docx_cap_space: " .. docx_cap_space .. "; docx_padding_v: " ..
-        --           docx_padding_v)
         if #cap_text > 0 then -- If caption
             docx_cap_pre = '<w:keepLines/>' .. docx_cap_keep_w_next ..
                                '<w:spacing w:before="' .. space_above_caption ..
@@ -1239,8 +1297,6 @@ function recordParam(name, value, level, overrides)
     local err = ""
     local alt_doctype = doctype -- Accommodates ability to recognize that pdf docs are processed via latex
     if doctype == "latex" then alt_doctype = "pdf" end
-    -- print("Now am procssing entry: " .. name .. "; value: " .. value ..
-    --   "; at level: " .. level)
     i, j = string.find(name, ":[_%a]+$") -- Get param without doc constraint
     if i ~= nil then -- If constraint indicated
         nam = string.sub(name, i + 1, j) -- Get name without constraint
@@ -1249,8 +1305,8 @@ function recordParam(name, value, level, overrides)
             doctyp = string.sub(name, i, j - 1)
             if verify_entry(doctyp, doctypes) then -- Ensure doctype prefix valid
                 doc_specific = true
-                print("Verified override for spec with prefix: " .. doctyp ..
-                          "; doctype is " .. doctype)
+                -- print("Verified override for spec with prefix: " .. doctyp ..
+                --           "; doctype is " .. doctype)
             else
                 err = err .. "Invalid file type prefix ('" .. doctyp .. "') " ..
                           id_source(level) .. ". \n" -- Invalid
@@ -1261,7 +1317,6 @@ function recordParam(name, value, level, overrides)
         if (doc_specific == true and
             (doctyp == real_doctype or doctyp == alt_doctype)) then
             table.insert(overrides, {nam, value})
-            print("Installed value: " .. value .. " for name: " .. nam)
         end
     else -- No doc type constraint
         nam = name
@@ -1270,7 +1325,7 @@ function recordParam(name, value, level, overrides)
     if verify_entry(nam, valid_img_attr_names) == false then
         err = err .. "Bad attribute name ('" .. name .. "') " ..
                   id_source(level)
-        if #err > 0 then print("FOUND ERROR: " .. err) end
+        if #err > 0 then print("Found error: " .. err) end
     end
     if doc_specific == false then
         if #err == 0 then -- Only for valid entries
@@ -1298,12 +1353,12 @@ function Header(el, s, attr)
         for ptr = 1, #el.attributes, 1 do -- Gather parameters from image
             name = el.attributes[ptr][1]
             val = el.attributes[ptr][2]
-            if name == "pdf_header_with_next" then
+            if name == "keep_with_next" then
                 if tonumber(val) > 2 then
                     minlines = val
                 else
                     err_msg = err_msg ..
-                                  "Parameter 'pdf_header_with_next' must be greater than 2. (Heading '" ..
+                                  "Parameter 'keep_with_next' must be greater than 2. (Heading '" ..
                                   stringify(el.content) .. "') "
                 end
             else
@@ -1361,9 +1416,6 @@ function doctype_override(level, overrides)
         if overrides[ptr] ~= nil then
             nam = overrides[ptr][1]
             image_params[nam][level] = overrides[ptr][2] -- Override non-doc-specific value
-            print("overrides[ptr][1]: " .. overrides[ptr][1] ..
-                      "Overriding param : " .. image_params[nam][this_i] ..
-                      "; overrides[ptr][2]: " .. overrides[ptr][2])
         end
         ptr = ptr + 1
     until ptr > #overrides
@@ -1494,6 +1546,236 @@ function get_docx_padding_v(val)
     return (docx_padding_v + val) * twips_per_in
 end
 
+-- *************************************************************************
+--[[
+Get Image Size
+By: MikuAuahDark
+Allows you to get image/video size from most files.
+Supported Image/Video Files(by priority order):
+1. Portable Network Graphics
+2. Windows Bitmap
+3. JPEG
+4. GIF
+5. Photoshop Document
+6. Truevision TGA
+7. JPEG XR/TIFF*
+8. MP4
+9. AVI
+(*) = experimental
+]]
+function GetImageWidthHeight(file)
+    local file = string.gsub(file, "%%20", " ") -- Remove any excaped spaces
+    local fileinfo = type(file)
+    if type(file) == "string" then
+        file = assert(io.open(file, "rb"))
+    else
+        fileinfo = file:seek("cur")
+    end
+    local function refresh()
+        if type(fileinfo) == "number" then
+            file:seek("set", fileinfo)
+        else
+            file:close()
+        end
+    end
+    local width, height = 0, 0
+    file:seek("set", 1)
+    -- Detect if PNG
+    if file:read(3) == "PNG" then
+        --[[
+			The strategy is
+			1. Seek to position 0x10
+			2. Get value in big-endian order
+		]]
+        file:seek("set", 16)
+        local widthstr, heightstr = file:read(4), file:read(4)
+        if type(fileinfo) == "number" then
+            file:seek("set", fileinfo)
+        else
+            file:close()
+        end
+        width =
+            widthstr:sub(1, 1):byte() * 16777216 + widthstr:sub(2, 2):byte() *
+                65536 + widthstr:sub(3, 3):byte() * 256 +
+                widthstr:sub(4, 4):byte()
+        height = heightstr:sub(1, 1):byte() * 16777216 +
+                     heightstr:sub(2, 2):byte() * 65536 +
+                     heightstr:sub(3, 3):byte() * 256 +
+                     heightstr:sub(4, 4):byte()
+        return width, height
+    end
+    file:seek("set")
+    -- Detect if BMP
+    if file:read(2) == "BM" then
+        --[[ 
+			The strategy is:
+			1. Seek to position 0x12
+			2. Get value in little-endian order
+		]]
+        file:seek("set", 18)
+        local widthstr, heightstr = file:read(4), file:read(4)
+        refresh()
+        width =
+            widthstr:sub(4, 4):byte() * 16777216 + widthstr:sub(3, 3):byte() *
+                65536 + widthstr:sub(2, 2):byte() * 256 +
+                widthstr:sub(1, 1):byte()
+        height = heightstr:sub(4, 4):byte() * 16777216 +
+                     heightstr:sub(3, 3):byte() * 65536 +
+                     heightstr:sub(2, 2):byte() * 256 +
+                     heightstr:sub(1, 1):byte()
+        return width, height
+    end
+    -- Detect if JPG/JPEG
+    file:seek("set")
+    if file:read(2) == "\255\216" then
+        --[[
+			The strategy is
+			1. Find necessary markers
+			2. Store biggest value in variable
+			3. Return biggest value
+		]]
+        local lastb, curb = 0, 0
+        local xylist = {}
+        local sstr = file:read(1)
+        while sstr ~= nil do
+            lastb = curb
+            curb = sstr:byte()
+            if (curb == 194 or curb == 192) and lastb == 255 then
+                file:seek("cur", 3)
+                local sizestr = file:read(4)
+                local h = sizestr:sub(1, 1):byte() * 256 +
+                              sizestr:sub(2, 2):byte()
+                local w = sizestr:sub(3, 3):byte() * 256 +
+                              sizestr:sub(4, 4):byte()
+                if w > width and h > height then
+                    width = w
+                    height = h
+                end
+            end
+            sstr = file:read(1)
+        end
+        if width > 0 and height > 0 then
+            refresh()
+            return width, height
+        end
+    end
+    file:seek("set")
+    -- Detect if GIF
+    if file:read(4) == "GIF8" then
+        --[[
+			The strategy is
+			1. Seek to 0x06 position
+			2. Extract value in little-endian order
+		]]
+        file:seek("set", 6)
+        width, height = file:read(1):byte() + file:read(1):byte() * 256,
+                        file:read(1):byte() + file:read(1):byte() * 256
+        refresh()
+        return width, height
+    end
+    -- More image support
+    file:seek("set")
+    -- Detect if Photoshop Document
+    if file:read(4) == "8BPS" then
+        --[[
+			The strategy is
+			1. Seek to position 0x0E
+			2. Get value in big-endian order
+		]]
+        file:seek("set", 14)
+        local heightstr, widthstr = file:read(4), file:read(4)
+        refresh()
+        width =
+            widthstr:sub(1, 1):byte() * 16777216 + widthstr:sub(2, 2):byte() *
+                65536 + widthstr:sub(3, 3):byte() * 256 +
+                widthstr:sub(4, 4):byte()
+        height = heightstr:sub(1, 1):byte() * 16777216 +
+                     heightstr:sub(2, 2):byte() * 65536 +
+                     heightstr:sub(3, 3):byte() * 256 +
+                     heightstr:sub(4, 4):byte()
+        return width, height
+    end
+    file:seek("end", -18)
+    -- Detect if Truevision TGA file
+    if file:read(10) == "TRUEVISION" then
+        --[[
+			The strategy is
+			1. Seek to position 0x0C
+			2. Get image width and height in little-endian order
+		]]
+        file:seek("set", 12)
+        width = file:read(1):byte() + file:read(1):byte() * 256
+        height = file:read(1):byte() + file:read(1):byte() * 256
+        refresh()
+        return width, height
+    end
+    file:seek("set")
+    -- Detect if JPEG XR/Tagged Image File (Format)
+    if file:read(2) == "II" then
+        -- It would slow, tell me how to get it faster
+        --[[
+			The strategy is
+			1. Read all file contents
+			2. Find "Btomlong" and "Rghtlong" string
+			3. Extract values in big-endian order(strangely, II stands for Intel byte ordering(little-endian) but it's in big-endian)
+		]]
+        temp = file:read("*a")
+        btomlong = {temp:find("Btomlong")}
+        rghtlong = {temp:find("Rghtlong")}
+        if #btomlong == 2 and #rghtlong == 2 then
+            heightstr = temp:sub(btomlong[2] + 1, btomlong[2] + 5)
+            widthstr = temp:sub(rghtlong[2] + 1, rghtlong[2] + 5)
+            refresh()
+            width = widthstr:sub(1, 1):byte() * 16777216 +
+                        widthstr:sub(2, 2):byte() * 65536 +
+                        widthstr:sub(3, 3):byte() * 256 +
+                        widthstr:sub(4, 4):byte()
+            height = heightstr:sub(1, 1):byte() * 16777216 +
+                         heightstr:sub(2, 2):byte() * 65536 +
+                         heightstr:sub(3, 3):byte() * 256 +
+                         heightstr:sub(4, 4):byte()
+            return width, height
+        end
+    end
+    -- Video support
+    file:seek("set", 4)
+    -- Detect if MP4
+    if file:read(7) == "ftypmp4" then
+        --[[
+			The strategy is
+			1. Seek to 0xFB
+			2. Get value in big-endian order
+		]]
+        file:seek("set", 0xFB)
+        local widthstr, heightstr = file:read(4), file:read(4)
+        refresh()
+        width =
+            widthstr:sub(1, 1):byte() * 16777216 + widthstr:sub(2, 2):byte() *
+                65536 + widthstr:sub(3, 3):byte() * 256 +
+                widthstr:sub(4, 4):byte()
+        height = heightstr:sub(1, 1):byte() * 16777216 +
+                     heightstr:sub(2, 2):byte() * 65536 +
+                     heightstr:sub(3, 3):byte() * 256 +
+                     heightstr:sub(4, 4):byte()
+        return width, height
+    end
+    file:seek("set", 8)
+    -- Detect if AVI
+    if file:read(3) == "AVI" then
+        file:seek("set", 0x40)
+        width = file:read(1):byte() + file:read(1):byte() * 256 +
+                    file:read(1):byte() * 65536 + file:read(1):byte() * 16777216
+        height = file:read(1):byte() + file:read(1):byte() * 256 +
+                     file:read(1):byte() * 65536 + file:read(1):byte() *
+                     16777216
+        refresh()
+        return width, height
+    end
+    refresh()
+    return nil
+end
+
+-- *************************************************************************
 -- Define filter with sequence
 return {
     traverse = 'topdown',
