@@ -1,19 +1,30 @@
 ---
-title: place-image pandoc lua filter adds image and caption control
+title:  Place-Image Pandoc Lua Filter Adds Image and Caption Control
+subtitle:  | 
+  | Optional parameters provide extended control of markdown images and captions
+author: "George Markle"
+titlepage: "yes"
+titlepage-background: "images-md/title-page-background.pdf"
+titlepage-rule-color: "1b75bb"
+titlepage-rule-height: "3"
+date: "November 1, 2022"
+book: "yes"
 papersize: "Letter"
 geometry: "left=1in, right=1in, top=.75in, bottom=.75in, footskip=1cm"
 imageplacement: cap_label="Figure", cap_label_sep=":_"
 table-use-row-colors: "yes"
 toc-own-page: "yes"
 output:
-  md_document:
-    variant: "gfm"
-    pandoc_args: ["-oREADME.md", "--lua-filter=place-image.lua"]
+  pdf_document:
+    template: "./templates/eisvogel.latex"
+    pandoc_args: ["--lua-filter=place-image.lua"]
     toc: true
     toc_depth: '3'
+    keep_tex: true
   latex_document:
     template: "./templates/eisvogel.latex"
     pandoc_args: ["--lua-filter=place-image.lua"]
+    keep_tex: true
   word_document:
     reference_docx: "./templates/reference_template.docx"
     pandoc_args: ["--lua-filter=place-image.lua"]
@@ -24,9 +35,9 @@ output:
     self_contained: no
     toc: true
     toc_depth: '3'
-  pdf_document:
-    template: "./templates/eisvogel.latex"
-    pandoc_args: ["--lua-filter=place-image.lua"]
+  md_document:
+    variant: "gfm"
+    pandoc_args: ["-oREADME.md", "--lua-filter=place-image.lua"]
     toc: true
     toc_depth: '3'
 ---
@@ -106,7 +117,7 @@ You can affect all images within a global "[imageplacement](#global-params)" sta
 
 You can preface any parameter with a document format identifier and that parameter will override any default or other image parameter for that document type. For example, the following will set the image width at 50% of page width for any supported format except pdf and docx images, which will be sized separately:
 
-`![My caption](my-image.jpg){position=float-right width=50% pdf:width=40% docx:width=45%}]`
+`![My caption](my-image.jpg){position=float-right width=50% pdf:width=40% docx:width=45%}`
 
 Supported document format identifiers include the following:
 
@@ -212,7 +223,7 @@ or
 | cap_label_sep&nbsp;&nbsp; | Allows specifying a custom separator character(s) between the numbered custom label and caption.  | &nbsp;&nbsp;":&nbsp;" | By default, label and caption are separated by a colon followed by a space character, like this: <br/>"Figure 4: My caption..."<br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters:<br/>'cap_label_sep="\_-\_"'<br/>It will appear as, for example,<br/>"Photo 2 - My caption..." |
 | close_frame | (PDF/latex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
 | adjust_frame_ht  | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below. Should this occur, you may try specifying different equialent line heights for that image, e.g., "10", "15", etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., "pdf:width=42%" instead of "width=45%.") |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf:adjust_frame_ht=15, etc.  |
-| pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. Normally, this should not be used. | false | Examples: pdf_anchor_strict=true |
+| pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. By default, this is set to *false*, which relaxes restrictions and allows image to be moved to accommodate normal latex page composition. | false | Examples: pdf_anchor_strict=true |
 | md_cap_ht_adj | (Markdown/gfm documents only) — Allows tweaking the height of the vertical caption container, should you find a caption failing to be contained properly. Values may be between -20 and 20.|  | Examples: md_cap_ht_adj=3, md_cap_ht_adj=-4 |
 
 ### For headings
@@ -286,10 +297,9 @@ output:
 ---
 </code></pre>
 
-![Now you can place and caption your images and illustrations wherever and however you like!](./images-md/happy-face-doc.png){width=40% position=float-right cap_position=above cap_text_align=center}
-
-
 # Considerations for floating images in markdown/gfm documents{#using-md}
+
+![Now you can place and caption your images and illustrations wherever and however you like!](./images-md/happy-face-doc.png){width=40% pdf:width=35% position=float-right cap_position=above cap_text_align=center adjust_frame_ht=15}
 
 Natively, Pandoc does not create floated images for markdown documents and some *flavors* of markdown further limit image and caption formatting. The place-image filter does allow images to be floated with most markdown *flavors* but with some limitations.
 
@@ -302,7 +312,7 @@ Should you find a caption failing to be contained properly, the parameter *md_ca
 
 <a name="using-wrapfig"></a>
 
-# Special considerations for floating images in latex/pdf documents{#using-wrapfig}
+# Special considerations for floating images in latex/pdf documents{#using-wrapfig keep_with_next=15}
 
 ## Include these packages
 
@@ -343,13 +353,9 @@ Now, review your re-rendered document again and iterate the steps above if neede
 
 #### Use percentage for image width
 
-The fewest issues should be encounted by using percentage ("`%`") rather than indicating image widh using `in`, `cm`, `mm`, or `px`. For example:
+The fewest issues should be encounted by using percentage ("`%`") rather than indicating image widh using "in", "cm", "mm", or "px". For example:
 
 `width=40%`
-
-#### Don't override the *pdf-anchor-strict* default
-
-By default, the *pdf_anchor_strict* parameter is set to *false*, which allows latex to move images that are too close to a top or bottom margin to another page. It is strongly suggested you do not override this parameter.
 
 #### Avoid placing floated images too close together
 
@@ -360,6 +366,13 @@ Whenever the pandoc converter encounters a floated image too close to a top or b
 Latex seems to get confused if it finds a floated image where any part of a table may wrap around it. Better keep tables and images apart.
 
 A wrapped image that causes text from a table to float around it may cause a margin below it to change. Move or resize the image to ensure its bottom does not extend into a table.
+
+#### Don't place floated image immediately before a heading.
+For some reason, this may cause latex to lose track of margins, indents and its mind. 
+
+#### Don't override the *pdf-anchor-strict* default
+
+By default, the *pdf_anchor_strict* parameter is set to *false*, which allows latex to move images that are too close to a top or bottom margin to another page. It is strongly suggested you do not override this parameter.
 
 ### Use the format-specific *'`pdf:`'* prefix for pdf/latex image parameters
 

@@ -1,4 +1,4 @@
---[[  --  Copyright 2022 George Markle - 22/11/02
+--[[  --  Copyright 2022 George Markle - 22/11/04
 Excellent code to extract image size by MikuAuahDark
 
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
@@ -20,6 +20,7 @@ local twips_per_in = points_per_in * twips_per_point
 local emu_per_in = 635 * twips_per_in
 local cm_per_in = 2.54
 local mm_per_in = 25.4
+local code_char_per_line = 50 -- Latex code broken into lines this max length
 local bookmark = 1 -- Init figure number
 local dims = {"%", "in", "inches", "px", "pixels", "cm", "mm"}
 
@@ -1347,7 +1348,6 @@ function Header(el, s, attr)
     local minlines = default
     local err_msg = "" -- Reset error message
     local e_msg
-    print("Encountered header with attributes: " .. tostring(el.attributes))
     if #el.attributes ~= 0 then
         -- Gather attributes and ensure each attribute name is valid
         for ptr = 1, #el.attributes, 1 do -- Gather parameters from image
@@ -1388,6 +1388,68 @@ function Header(el, s, attr)
     else -- if not latex/pdf
         return nil
     end
+end
+
+-- **************************************************************************************************
+-- Intercept Code to control for Latex/pdf
+function Code(el, s, attr)
+    if (FORMAT:match "latex") or (FORMAT:match "pdf") then
+        results = segment_line(tostring(el.text))
+        return pandoc.RawInline('latex', results)
+    else
+        return nil -- No change
+    end
+end
+
+-- Divide code text into segments that will fit onto a line limited to 'code_char_per_line' characters
+function segment_line(txt)
+    local accum_text = "\\colorbox{light-gray}{\\texttt{"
+    local last_line_start = 1
+    local line = 0
+    local ptr = 1
+    local i = 0
+    local j = 0
+    local done = false
+    txt = clean_txt_for_ltx(txt) -- Clean of problem characters
+
+    while not done do
+        i, j = string.find(txt, "%s", ptr) -- Find next space
+        if i == nil then -- Done
+            accum_text = accum_text .. string.sub(txt, last_line_start, #txt) ..
+                             "}}" -- Finished
+            done = true
+            line = line + 1
+            print("Completed segmentation for line " .. line .. " to: " ..
+                      accum_text)
+        else -- Still collecting
+            if i - last_line_start > code_char_per_line then -- Over line char limit
+                accum_text =
+                    accum_text .. string.sub(txt, last_line_start, i) ..
+                        "}}\\newline\n\\colorbox{light-gray}{\\texttt{" -- Record line and init next line
+                ptr = i + 1
+                last_line_start = ptr
+                line = line + 1
+                print("line " .. line .. " accum_text: " .. accum_text)
+            else
+                ptr = j + 1 -- Bump pointer
+            end
+        end
+    end
+    print("Segmented text: " .. accum_text)
+    return accum_text
+end
+
+-- Substitute characters so latex doesn't have a cow
+function clean_txt_for_ltx(txt)
+    print("Cleaning string: " .. txt)
+    txt = string.gsub(txt, "\\", "\\textbackslash ")
+    txt = string.gsub(txt, "_", "\\_")
+    txt = string.gsub(txt, "%%", "\\%%")
+    txt = string.gsub(txt, "{", "\\{")
+    txt = string.gsub(txt, "}", "\\}")
+    txt = string.gsub(txt, "#", "\\#")
+    print("Cleaned string: " .. txt)
+    return txt
 end
 
 -- Check entry against simple table of allowed values and return true if valid
@@ -1780,8 +1842,7 @@ end
 return {
     traverse = 'topdown',
     {Meta = Meta}, -- Must be first
-    {CodeBlock = CodeBlock},
+    {Code = Code},
     {Header = Header},
     {Image = Image}
 }
-
