@@ -1,10 +1,10 @@
 % Package statements in this file required for placeimage.lua filter to work:
-% Additions 2022 by George Markle to enable compatibility with place-image.lua:
+% Additions 11/5/22 by George Markle to enable compatibility with place-image.lua:
 % Added usepackage{layouts} to allow calculating width relative to latex/pdf page width
+% Added  \usepackage{needspace} to enable orphan protection
 % Added usepackage{wrapfig} to use Donald Arseneau's Pandoc 'wrapfig' extension to enable wrap-around floated figures
 % Added \usepackage[export]{adjustbox} to enable additional positioning
-
-  \usepackage[export]{adjustbox}  % must include to enable additional positioning
+% Added \usepackage{xcolor} and 'light-gray' definition to enable text coloring
 
 \PassOptionsToPackage{unicode$for(hyperrefoptions)$,$hyperrefoptions$$endfor$}{hyperref}
 \PassOptionsToPackage{hyphens}{url}
@@ -101,10 +101,12 @@ $endif$
 \ifPDFTeX
   \usepackage[$if(fontenc)$$fontenc$$else$T1$endif$]{fontenc}
   \usepackage[utf8]{inputenc}
-  \usepackage{textcomp} % provide euro and other symbols
- \usepackage{layouts} % allows calculating width relative to latex/pdf page width
+  \usepackage{layouts} % allows calculating width relative to latex/pdf page width
+  \usepackage{needspace} % to enable orphan protection
   \usepackage{wrapfig} % must include to enable wrap around figures
   \usepackage[export]{adjustbox}  % must include to enable additional positioning
+  \usepackage{xcolor} % must include to enable text coloring
+  \definecolor{light-gray}{gray}{0.94} % used to color code text
 \else % if luatex or xetex
 $if(mathspec)$
   \ifXeTeX

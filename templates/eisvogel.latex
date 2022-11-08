@@ -4,7 +4,9 @@
 % Additions 10/21/2022 by George Markle to enable compatibility with place-image.lua:
 % Added usepackage{wrapfig} to use Donald Arseneau's Pandoc 'wrapfig' extension to enable wrap-around floated figures
 %Added usepackage[export]{adjustbox} to enable additional positioning
-%Added xcolor color light-gray
+% Added 'light-gray' definition for xcolor package to enable text color
+% Added \usepackage{listings} to enable backcolor for code blocks
+% Added \usepackage{needspace} to enable heading orphan protection
 
 % All rights reserved.
 %
@@ -82,7 +84,8 @@ $for(classoption)$
   $classoption$$sep$,
 $endfor$
   ,captions=tableheading
-]{$if(beamer)$$documentclass$$else$$if(book)$scrbook$else$scrartcl$endif$$endif$}
+]
+{$if(beamer)$$documentclass$$else$$if(book)$scrbook$else$scrartcl$endif$$endif$}
 $if(beamer)$
 $if(background-image)$
 \usebackgroundtemplate{%
@@ -272,7 +275,7 @@ $endif$
 \definecolor{default-filecolor}{HTML}{A50000}
 \definecolor{default-citecolor}{HTML}{4077C0}
 \definecolor{default-urlcolor}{HTML}{4077C0}
-\definecolor{light-gray}{gray}{0.94}
+\definecolor{light-gray}{gray}{0.95}
 
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 $if(footnotes-pretty)$
@@ -642,7 +645,7 @@ $else$
 $endif$
 % When using the classes report, scrreprt, book,
 % scrbook or memoir, uncomment the following line.
-%\addtokomafont{chapter}{\color{heading-color}}
+\addtokomafont{chapter}{\color{heading-color}}
 
 %
 % variables for title, author and date
@@ -868,9 +871,11 @@ $endif$
 %%
 %% end added
 %%
-%\usepackage{layouts} % allows calculating width relative to latex/pdf page width
+\usepackage{needspace} % to enable orphan protection
 \usepackage{wrapfig} % must include to enable wrap around figures
 \usepackage[export]{adjustbox}  % must include to enable additional positioning
+\usepackage{listings} % must include to enable code block back color
+\lstdefinestyle{codestyle}{backgroundcolor=\color{light-gray}, breakatwhitespace=true, breaklines=true}
 
 \begin{document}
 

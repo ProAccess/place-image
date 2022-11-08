@@ -1,4 +1,4 @@
---[[  --  Copyright 2022 George Markle - 22/11/04
+--[[  --  Copyright 2022 George Markle - 22/11/08
 Excellent code to extract image size by MikuAuahDark
 
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
@@ -329,11 +329,6 @@ function reset_img_params()
     for ptr = 1, #valid_img_attr_names, 1 do -- Reset all param vals for current image
         image_params[valid_img_attr_names[ptr]][this_i] = nil
     end
-    -- frame_position = image_params["position"][default_i] -- Default image frame position
-    -- padding_h = dimToInches(image_params["h_padding"][default_i]) -- horizontal padding in inches between image and text
-    -- padding_v = dimToInches(image_params["v_padding"][default_i]) -- vertical padding in inches between image and text
-    -- docx_padding_h = dimToInches(image_params["h_padding"][default_i])
-    -- docx_padding_v = dimToInches(image_params["v_padding"][default_i])
 end
 
 -- **************************************************************************************************
@@ -1188,7 +1183,7 @@ function Image(img)
                                '<w:spacing w:before="' .. space_above_caption ..
                                '" w:after="' .. space_below_caption ..
                                '" w:beforeAutospacing="0" />'
-            print("docx_cap_pre: " .. docx_cap_pre)
+            -- print("docx_cap_pre: " .. docx_cap_pre)
         end
         docx_img_pre = '<w:bookmarkStart w:id="0" w:name="' .. img_label ..
                            '"/><w:bookmarkEnd w:id="0"/><w:pPr>' ..
@@ -1338,7 +1333,6 @@ end
 
 -- **************************************************************************************************
 -- Affects latex/pdf only: Intercept headers and add latex to ensure will not be orphaned. 
--- function Header(lev, s, attr)
 function Header(el, s, attr)
     local sec_type -- section or subsection
     local r = ""
@@ -1370,9 +1364,16 @@ function Header(el, s, attr)
     end
     if el.level < 2 then -- Get header level
         sec_type = "section"
-    else
+    elseif el.level == 2 then
         sec_type = "subsection"
+    else
+        sec_type = "subsubsection"
+        -- elseif el.level == 5 then
+        --     sec_type = "paragraph"
+        -- else
+        --     sec_type = "subparagraph"
     end
+
     if #err_msg > 0 then
         emsg = "\\textcolor{red}{[ERROR IN HEADING INFORMATION - " .. err_msg ..
                    "]}\n\n"
@@ -1391,6 +1392,20 @@ function Header(el, s, attr)
 end
 
 -- **************************************************************************************************
+-- Intercept CodeBlock to control for Latex/pdf
+function CodeBlock(cb)
+    if (FORMAT:match "latex") or (FORMAT:match "pdf") then
+        print("cb.text: " .. tostring(cb.text))
+        txt = cb.text
+        results = "\\lstset{style=codestyle}\\begin{lstlisting}\n" .. txt ..
+                      "\\end{lstlisting}"
+        return pandoc.RawInline('latex', results)
+    else
+        return nil -- No change
+    end
+end
+
+-- **************************************************************************************************
 -- Intercept Code to control for Latex/pdf
 function Code(el, s, attr)
     if (FORMAT:match "latex") or (FORMAT:match "pdf") then
@@ -1403,52 +1418,58 @@ end
 
 -- Divide code text into segments that will fit onto a line limited to 'code_char_per_line' characters
 function segment_line(txt)
-    local accum_text = "\\colorbox{light-gray}{\\texttt{"
+    local accum_text = ""
+    local line_text = ""
+    local line_tmplt -- How formatted
+    local lines_tmplt
     local last_line_start = 1
     local line = 0
     local ptr = 1
     local i = 0
     local j = 0
     local done = false
+    line_tmplt = "\\colorbox{light-gray}{\\texttt{[L]}}\\newline\n"
+    lines_tmplt = "[F]"
     txt = clean_txt_for_ltx(txt) -- Clean of problem characters
-
+    line_text = "" -- Reset line
     while not done do
-        i, j = string.find(txt, "%s", ptr) -- Find next space
+        i, j = string.find(txt, " ", ptr) -- Find next space
         if i == nil then -- Done
-            accum_text = accum_text .. string.sub(txt, last_line_start, #txt) ..
-                             "}}" -- Finished
+            line_text = string.sub(txt, last_line_start, i)
+            if not cb then
+                accum_text = accum_text ..
+                                 string.gsub(line_tmplt, "%[L%]", line_text)
+            else
+                accum_text = string.gsub(lines_tmplt, "%[F%]", accum_text)
+            end
+            print("accum_text: " .. accum_text)
             done = true
             line = line + 1
-            print("Completed segmentation for line " .. line .. " to: " ..
-                      accum_text)
         else -- Still collecting
             if i - last_line_start > code_char_per_line then -- Over line char limit
-                accum_text =
-                    accum_text .. string.sub(txt, last_line_start, i) ..
-                        "}}\\newline\n\\colorbox{light-gray}{\\texttt{" -- Record line and init next line
+                line_text = string.sub(txt, last_line_start, i)
+                line_text = string.gsub(line_tmplt, "%[L%]", line_text)
+                -- print("LINE: " .. line_text)
+                accum_text = accum_text .. line_text
                 ptr = i + 1
                 last_line_start = ptr
                 line = line + 1
-                print("line " .. line .. " accum_text: " .. accum_text)
             else
                 ptr = j + 1 -- Bump pointer
             end
         end
     end
-    print("Segmented text: " .. accum_text)
     return accum_text
 end
 
 -- Substitute characters so latex doesn't have a cow
 function clean_txt_for_ltx(txt)
-    print("Cleaning string: " .. txt)
     txt = string.gsub(txt, "\\", "\\textbackslash ")
     txt = string.gsub(txt, "_", "\\_")
-    txt = string.gsub(txt, "%%", "\\%%")
+    txt = string.gsub(txt, "%%", "\\%%%%")
     txt = string.gsub(txt, "{", "\\{")
     txt = string.gsub(txt, "}", "\\}")
     txt = string.gsub(txt, "#", "\\#")
-    print("Cleaned string: " .. txt)
     return txt
 end
 
@@ -1843,6 +1864,7 @@ return {
     traverse = 'topdown',
     {Meta = Meta}, -- Must be first
     {Code = Code},
+    {CodeBlock = CodeBlock},
     {Header = Header},
     {Image = Image}
 }
