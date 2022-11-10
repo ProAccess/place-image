@@ -5,6 +5,8 @@
 % Added usepackage{wrapfig} to use Donald Arseneau's Pandoc 'wrapfig' extension to enable wrap-around floated figures
 %Added usepackage[export]{adjustbox} to enable additional positioning
 % Added 'light-gray' definition for xcolor package to enable text color
+% ADDED 'linkcolor definition for xcolor package to enable text color
+
 % Added \usepackage{listings} to enable backcolor for code blocks
 % Added \usepackage{needspace} to enable heading orphan protection
 
@@ -275,7 +277,8 @@ $endif$
 \definecolor{default-filecolor}{HTML}{A50000}
 \definecolor{default-citecolor}{HTML}{4077C0}
 \definecolor{default-urlcolor}{HTML}{4077C0}
-\definecolor{light-gray}{gray}{0.95}
+\definecolor{linkcolor}{HTML}{114A70}	% For internal link color in pdf docs
+\definecolor{light-gray}{gray}{0.95}	% For code block background
 
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 $if(footnotes-pretty)$
@@ -384,7 +387,8 @@ $else$
 \patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
 \makeatother
 % Allow footnotes in longtable head/foot
-\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+%\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+{\usepackage{footnote}
 \makesavenoteenv{longtable}
 $endif$
 $endif$
