@@ -1,11 +1,13 @@
 %%
 % Copyright (c) 2017 - 2021, Pascal Wagler;
 % Copyright (c) 2014 - 2021, John MacFarlane
-% Additions 10/21/2022 by George Markle to enable compatibility with place-image.lua:
+% Additions 11/14/2022 by George Markle to enable compatibility with place-image.lua:
 % Added usepackage{wrapfig} to use Donald Arseneau's Pandoc 'wrapfig' extension to enable wrap-around floated figures
-%Added usepackage[export]{adjustbox} to enable additional positioning
+% Added usepackage[export]{adjustbox} to enable additional positioning
+% Added usepackage{titletoc} to enable making top section level entry boldface
 % Added 'light-gray' definition for xcolor package to enable text color
-% ADDED 'linkcolor definition for xcolor package to enable text color
+% Added 'linkcolor definition for xcolor package to enable text color
+% Added \renewcommand\thesection{\arabic{section}}, etc. to link counters to section levels
 
 % Added \usepackage{listings} to enable backcolor for code blocks
 % Added \usepackage{needspace} to enable heading orphan protection
@@ -278,6 +280,7 @@ $endif$
 \definecolor{default-citecolor}{HTML}{4077C0}
 \definecolor{default-urlcolor}{HTML}{4077C0}
 \definecolor{linkcolor}{HTML}{114A70}	% For internal link color in pdf docs
+\definecolor{heading-color}{HTML}{114A70}	% For heading color in pdf docs
 \definecolor{light-gray}{gray}{0.95}	% For code block background
 
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
@@ -879,7 +882,13 @@ $endif$
 \usepackage{wrapfig} % must include to enable wrap around figures
 \usepackage[export]{adjustbox}  % must include to enable additional positioning
 \usepackage{listings} % must include to enable code block back color
+\usepackage{tocloft} % to allow modifying toc style
+\renewcommand\thesection{\arabic{section}.} % Link counter to section
+\renewcommand\thesubsection{\thesection\arabic{subsection}} % Link counters to subsection
+\renewcommand\thesubsubsection{\thesection\arabic{subsection}.\arabic{subsubsection}} % Link counters to subsubsection
+%\renewcommand\thesubsubsection{\thesection.\arabic{subsection}.\arabic{subsubsection}.\arabic{paragraph}} % Link counters to paragraph
 \lstdefinestyle{codestyle}{backgroundcolor=\color{light-gray}, breakatwhitespace=true, breaklines=true}
+\renewcommand{\cftsecfont}{\bfseries} % Make TOC section level bold-face
 
 \begin{document}
 

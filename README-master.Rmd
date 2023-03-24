@@ -15,19 +15,6 @@ imageplacement: cap_label="Figure", cap_label_sep=":_"
 table-use-row-colors: "yes"
 toc-own-page: "yes"
 output:
-  pdf_document:
-    template: "./templates/eisvogel.latex"
-    pandoc_args: ["--lua-filter=place-image.lua"]
-    toc: true
-    toc_depth: '3'
-    keep_tex: true
-  latex_document:
-    template: "./templates/eisvogel.latex"
-    pandoc_args: ["--lua-filter=place-image.lua"]
-    keep_tex: true
-  word_document:
-    reference_docx: "./templates/reference_template.docx"
-    pandoc_args: ["--lua-filter=place-image.lua"]
   html_document:
     css: "css-md/mdstyles.css"
     template: "./templates/default.html5"
@@ -35,6 +22,19 @@ output:
     self_contained: no
     toc: true
     toc_depth: '3'
+  latex_document:
+    template: "./templates/eisvogel.latex"
+    pandoc_args: ["--lua-filter=place-image.lua"]
+    keep_tex: true
+  word_document:
+    reference_docx: "./templates/reference_template.docx"
+    pandoc_args: ["--lua-filter=place-image.lua"]
+  pdf_document:
+    template: "./templates/eisvogel.latex"
+    pandoc_args: ["--lua-filter=place-image.lua"]
+    toc: true
+    toc_depth: '3'
+    keep_tex: true
   md_document:
     variant: "gfm"
     pandoc_args: ["-oREADME.md", "--lua-filter=place-image.lua"]
