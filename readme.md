@@ -1,39 +1,3 @@
-- [A solution for enhanced image and caption
-  control](#a-solution-for-enhanced-image-and-caption-control)
-- [Document formats supported](#document-formats-supported)
-  - [Example file included](#example-file-included)
-- [Parameters you can control](#parameters-you-can-control)
-  - [For images and captions](#for-images-and-captions)
-  - [For headings](#for-headings)
-  - [Control globally or just
-    individually](#control-globally-or-just-individually)
-    - [You can specify params for each specific
-      image](#you-can-specify-params-for-each-specific-image)
-    - [… or globally, for *all* images](#or-globally-for-all-images)
-    - [You can even specify different image params for different
-      document
-      types](#you-can-even-specify-different-image-params-for-different-document-types)
-  - [Parameters for a specific image](#image_specific)
-  - [Global parameters applying to *all* doc images](#global-params)
-- [Image parameter details](#commands-table)
-  - [Parameters you can use](#parameters-you-can-use)
-    - [For images and captions](#for-images-and-captions-1)
-    - [For headings](#for-headings-1)
-  - [Supports header YAML *papersize* and *geometry*
-    parameters](#supports-header-yaml-papersize-and-geometry-parameters)
-- [Setting up to use](#setting-up-to-use)
-- [Invoking filter from Pandoc](#invoking-filter-from-pandoc)
-- [Considerations for floating images in markdown/gfm
-  documents](#using-md)
-- [Special considerations for floating images in latex/pdf
-  documents](#using-wrapfig)
-  - [Include these packages](#include-these-packages)
-  - [Issues in latex/pdf documents](#issues-in-latexpdf-documents)
-    - [Use this procedure](#use-this-procedure)
-    - [Avoiding issues](#avoiding-issues)
-    - [Use the format-specific *‘`pdf.`’* prefix for pdf/latex image
-      parameters](#use-the-format-specific-pdf.-prefix-for-pdflatex-image-parameters)
-
 # A solution for enhanced image and caption control
 
 The *image-placement.lua* Pandoc filter is intended to address commonly

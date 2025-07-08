@@ -15,10 +15,12 @@ imageplacement: cap_label="Figure", cap_label_sep=":_"
 table-use-row-colors: "yes"
 toc-own-page: "yes"
 output:
-  md_document:
-    variant: "gfm"
+  html_document:
+    css: "css-md/mdstyles.css"
+    template: "./templates/default.html5"
     pandoc_args: ["--lua-filter=place-image.lua"]
-    toc: true
+    self_contained: no
+    toc: false
     toc_depth: '3'
   latex_document:
     template: "./templates/eisvogel.latex"
@@ -30,12 +32,10 @@ output:
     toc: true
     toc_depth: '3'
     keep_tex: true
-  html_document:
-    css: "css-md/mdstyles.css"
-    template: "./templates/default.html5"
+  md_document:
+    variant: "gfm"
     pandoc_args: ["--lua-filter=place-image.lua"]
-    self_contained: no
-    toc: true
+    toc: false
     toc_depth: '3'
   word_document:
     reference_docx: "./templates/reference_template.docx"
