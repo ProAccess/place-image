@@ -1,4 +1,4 @@
---[[  --  Copyright 2022 George Markle - 22/11/08
+--[[  --  Copyright 2022 George Markle - 22/11/14
 Excellent code to extract image size by MikuAuahDark
 
 place-image.lua – This filter allows greater control over imgage and caption placement and appearance.
@@ -43,7 +43,6 @@ local valid_img_attr_names =
         "cap_label_sep", -- If specified, indicates separater between caption label number and caption, e.g., ": "
         "adjust_frame_ht", -- For latex/pdf: - for cases where latex misjudges the equivalent line-height of an image. User may adjust vertical wrap, e.g., 10, 12, 15.
         "close_frame", -- For latex/pdf: Latex may not restore margin below floated image, leaving white space. This will restore margin.
-        "keep_with_next", -- For latex/pdf: If header orphaned, move to next page if within x lines of bottom.
         "pdf_anchor_strict", -- Indicates whether image may be moved to nearby location to avoid margin intrusion ()
         "md_cap_ht_adj" -- Adjustment to vertical caption container for markdown documents.
     }
@@ -85,7 +84,7 @@ local ltx_cap_h_pos
 local adjust_frame_ht -- 'Adjustment' value to shorten latex/pdf image wrap area.
 local pdf_anchor_strict -- Indicates strictness of latex image anchor
 local pdf_restore_mar -- Indicates altered margin following image should be restored
-local keep_with_next -- If fewer than this number of lines left before bottom, move to next page
+-- local keep_with_next -- If fewer than this number of lines left before bottom, move to next page
 local cap_docx_ind_l = 0
 local cap_docx_ind_r = 0
 local cap_html = ""
@@ -194,10 +193,10 @@ function Meta(meta)
     local value
     local done = false
     local ptr = 1
-    repeat -- Initialize table of image parameters
-        image_params[valid_img_attr_names[ptr]] = {nil, nil, nil}
-        ptr = ptr + 1
-    until ptr > #valid_img_attr_names
+    -- repeat -- Initialize table of image parameters
+    --     image_params[valid_img_attr_names[ptr]] = {nil, nil, nil}
+    --     ptr = ptr + 1
+    -- until ptr > #valid_img_attr_names
 
     -- Specify param value defaults
     image_params = {
@@ -220,10 +219,9 @@ function Meta(meta)
         ["adjust_frame_ht"] = {nil, nil, nil},
         ["pdf_anchor_strict"] = {"false", nil, nil},
         ["close_frame"] = {"false", nil, nil},
-        ["keep_with_next"] = {"4", nil, nil},
         ["md_cap_ht_adj"] = {"0", nil, nil}
     }
-    reset_img_params() -- Init variables before next image
+    -- reset_img_params() -- Init variables before next image
 
     gl_html_padding_table = {
         dimToInches(image_params["v_padding"][default_i]) * pixels_per_in,
@@ -284,40 +282,102 @@ function Meta(meta)
     -- print("Papersize: " .. papersize .. "; page_width: " .. page_width ..
     --           "; l_mar: " .. l_mar .. "; r_mar: " .. r_mar)
     -- Gather any global image parameters in Meta section
+
     doctype_overrides = {} -- Clear record of doc-type-specific overrides
     ptr = 1 -- Init pointer
     if meta.imageplacement ~= nil then
-        local glParStr = stringify(meta.imageplacement)
-        glParStr = string.gsub(glParStr, "“", '"') -- Clean of any Pandoc open quotes that disables standard expressions
-        glParStr = string.gsub(glParStr, "”", '"') -- Clean of any Pandoc open quotes that disable standard expressions
-        -- print("Processing globals: " .. glParStr)
-        repeat -- Gather any meta-specified global image parameters
-            i, j = string.find(glParStr, "[%a%:%_]+%s*=", ptr) -- Look for param name
-            if i == nil then
-                done = true
-                break
+        -- NEW: Check if imageplacement is an object (table) or string
+        if type(meta.imageplacement) == "table" then
+            -- First, check if it's actually a string split into array elements
+            local isStringArray = true
+            local concatenatedString = ""
+
+            -- Check if all elements are strings and can be concatenated
+            for k, v in pairs(meta.imageplacement) do
+                if type(k) == "number" then
+                    concatenatedString = concatenatedString .. stringify(v)
+                elseif type(k) == "string" then
+                    -- This is a proper object format
+                    isStringArray = false
+                    break
+                end
             end
-            key = trim(string.sub(glParStr, i, j - 1))
-            ptr = j
-            value = string.match(string.sub(glParStr, j + 1, j + 50),
-                                 "[%%%-%+%_%w%.%:%s]+")
-            if value == nil then
-                done = true
-                break
+
+            if isStringArray and #concatenatedString > 0 then
+                -- MULTILINE STRING FORMAT: Treat as concatenated string
+                print("Processing imageplacement as multiline string format")
+                local glParStr = concatenatedString
+                glParStr = string.gsub(glParStr, "“", '"') -- Clean of any Pandoc open quotes that disables standard expressions
+                glParStr = string.gsub(glParStr, "”", '"') -- Clean of any Pandoc open quotes that disable standard expressions
+                repeat -- Gather any meta-specified global image parameters
+                    i, j = string.find(glParStr, "[%a%.%_]+%s*=", ptr) -- Look for param name
+                    if i == nil then
+                        done = true
+                        break
+                    end
+                    key = trim(string.sub(glParStr, i, j - 1))
+                    ptr = j
+                    value = string.match(string.sub(glParStr, j + 1, j + 50),
+                                         "[%%%-%+%_%w%.%:%s]+")
+                    if value == nil then
+                        done = true
+                        break
+                    end
+                    ptr = j + 1
+                    err = recordParam(key, value, global_i, doctype_overrides) -- Save information
+                    if #err > 0 then -- If error
+                        err_msg = err_msg .. err .. "\n"
+                    end
+                until done
+            else
+                -- OBJECT FORMAT: Handle as key-value pairs
+                print("Processing imageplacement as object format")
+                for key, value in pairs(meta.imageplacement) do
+                    -- FIXED: Only process string keys, ignore numeric indices
+                    if type(key) == "string" then
+                        local stringValue = stringify(value)
+                        err = recordParam(key, stringValue, global_i,
+                                          doctype_overrides)
+                        if #err > 0 then
+                            err_msg = err_msg .. err .. "\n"
+                        end
+                    else
+                        print("Skipping numeric key:", key, "with value:",
+                              stringify(value))
+                    end
+                end
             end
-            ptr = j + 1
-            err = recordParam(key, value, global_i, doctype_overrides) -- Save information
-            if #err > 0 then -- If error
-                err_msg = err_msg .. err .. "\n"
-            end
-        until done
+        else
+            -- STRING FORMAT: Handle as comma-separated string (legacy format)
+            print("Processing imageplacement as string format")
+            local glParStr = stringify(meta.imageplacement)
+            glParStr = string.gsub(glParStr, "“", '"') -- Clean of any Pandoc open quotes that disables standard expressions
+            glParStr = string.gsub(glParStr, "”", '"') -- Clean of any Pandoc open quotes that disable standard expressions
+            repeat -- Gather any meta-specified global image parameters
+                i, j = string.find(glParStr, "[%a%.%_]+%s*=", ptr) -- Look for param name
+                if i == nil then
+                    done = true
+                    break
+                end
+                key = trim(string.sub(glParStr, i, j - 1))
+                ptr = j
+                value = string.match(string.sub(glParStr, j + 1, j + 50),
+                                     "[%%%-%+%_%w%.%:%s]+")
+                if value == nil then
+                    done = true
+                    break
+                end
+                ptr = j + 1
+                err = recordParam(key, value, global_i, doctype_overrides) -- Save information
+                if #err > 0 then -- If error
+                    err_msg = err_msg .. err .. "\n"
+                end
+            until done
+        end
     else
         print("No 'imageplacement' statement found in Meta section.")
     end
-    -- for ptr = 1, #doctype_overrides, 1 do -- print all overrides
-    --     print("Global override number " .. ptr .. " is: " ..
-    --               doctype_overrides[ptr][1][2])
-    -- end
+
     doctype_override(global_i, doctype_overrides) -- Override any parameters where doc-specific override indicated
     return meta
 end
@@ -325,8 +385,11 @@ end
 -- **************************************************************************************************
 -- Reset these variables before next image
 function reset_img_params()
+    -- print("#valid_img_attr_names: " .. #valid_img_attr_names .. "; ")
     -- err_msg = "" -- Reset error message
     for ptr = 1, #valid_img_attr_names, 1 do -- Reset all param vals for current image
+        -- print("ptr: " .. ptr)
+        -- print("valid_img_attr_names[ptr]: " .. valid_img_attr_names[ptr])
         image_params[valid_img_attr_names[ptr]][this_i] = nil
     end
 end
@@ -375,8 +438,10 @@ function Image(img)
     local parStr = tostring(img.attributes)
     -- print("\nFor image " .. src) -- New line
 
-    img_wd, img_ht = GetImageWidthHeight(src) -- Read image dimensions from file
-    img_ratio = img_ht / img_wd -- ratio
+    if not string.match(src, ".pdf") then -- Doesn't work with pdf images
+        img_wd, img_ht = GetImageWidthHeight(src) -- Read image dimensions from file
+        img_ratio = img_ht / img_wd -- ratio
+    end
     if #img.attributes ~= 0 then
         -- Gather attributes and ensure each attribute name is valid
         local r = ""
@@ -665,15 +730,15 @@ function Image(img)
         end
     end
 
-    val, par_source = getParam("keep_with_next") -- Indicates margin should be restored after image
-    if tonumber(val) > 2 then
-        keep_with_next = val
-    else
-        keep_with_next = image_params["keep_with_next"][default_i]
-        err_msg = err_msg .. "Invalid indicator of keep_with_next ('" ..
-                      tostring(val) .. "') for image " .. par_source ..
-                      ". It must be 3 or more.\n"
-    end
+    -- val, par_source = getParam("keep_with_next") -- Indicates margin should be restored after image
+    -- if tonumber(val) > 2 then
+    --     keep_with_next = val
+    -- else
+    --     keep_with_next = image_params["keep_with_next"][default_i]
+    --     err_msg = err_msg .. "Invalid indicator of keep_with_next ('" ..
+    --                   tostring(val) .. "') for image " .. par_source ..
+    --                   ". It must be 3 or more.\n"
+    -- end
 
     val, par_source = getParam("md_cap_ht_adj") -- Caption text size
     if val ~= nil then
@@ -900,7 +965,7 @@ function Image(img)
         -- *************************************************************************
         -- Latex/PDF documents prep
     elseif FORMAT:match "latex" then -- For Latex/PDF documents
-        print("Now processing latex/PDF for " .. src)
+        -- print("Now processing latex/PDF for " .. src)
         if close_frame == "true" or close_frame == "yes" then
             pdf_restore_mar = "\\vfill"
         else
@@ -929,18 +994,25 @@ function Image(img)
         else
             pdf_anchor_str = "L" -- Default
         end
+        if img_label ~= nil then -- If image id specified
+            img_lbl = "\\hypertarget{" .. img_label .. "}{}" -- Include label for linking
+        else
+            img_lbl = ""
+        end
 
         ltx_positions = {
             ["left"] = {'\\begin{figure}[htb]\\centering', 'flushleft'},
             ["center"] = {'\\begin{figure}[htb]\\centering', 'center'},
             ["right"] = {'\\begin{figure}[htb]\\centering', 'flushright'},
             ["float-left"] = {
-                '\\begin{wrapfigure}' .. ltx_adjust_lns .. '{' .. pdf_anchor_str ..
-                    '}{X\\linewidth}\\centering', 'flushleft'
+                '\\setlength{\\columnsep}{' .. padding_h ..
+                    'in}\\begin{wrapfigure}' .. ltx_adjust_lns .. '{' ..
+                    pdf_anchor_str .. '}{X\\linewidth}\\centering', 'flushleft'
             },
             ["float-right"] = {
-                '\\begin{wrapfigure}' .. ltx_adjust_lns .. '{' .. pdf_anchor_str ..
-                    '}{X\\linewidth}\\centering', 'flushright'
+                '\\setlength{\\columnsep}{' .. padding_h ..
+                    'in}\\begin{wrapfigure}' .. ltx_adjust_lns .. '{' ..
+                    pdf_anchor_str .. '}{X\\linewidth}\\centering', 'flushright'
             }
         }
         ltx_position = ltx_positions[frame_position][1]
@@ -1023,16 +1095,17 @@ function Image(img)
                              graphic_siz_frac .. "\\linewidth}" -- Outer minipage includes both image and caption
 
         if cap_position == "above" then -- If above
-            frame_assembly = frame_assembly .. cap_row ..
+            frame_assembly = frame_assembly .. cap_row .. img_lbl ..
                                  "\\includegraphics[width=" .. 1.0 ..
                                  "\\linewidth" .. graphic_pos .. "]{" .. src ..
                                  "}" .. "\\end{minipage}\\end{" .. ltx_cap_h_pos ..
                                  "}"
         else
-            frame_assembly =
-                frame_assembly .. "\\includegraphics[width=" .. 1.0 ..
-                    "\\linewidth" .. graphic_pos .. "]{" .. src .. "}" ..
-                    cap_row .. "\\end{minipage}\n\\end{" .. ltx_cap_h_pos .. "}"
+            frame_assembly = frame_assembly .. img_lbl ..
+                                 "\\includegraphics[width=" .. 1.0 ..
+                                 "\\linewidth" .. graphic_pos .. "]{" .. src ..
+                                 "}" .. cap_row .. "\\end{minipage}\n\\end{" ..
+                                 ltx_cap_h_pos .. "}"
         end
         if latex_figure_type == "{figure}" or tonumber(columns) > 1 then -- if for 'figure' or image within table
             results = frame_assembly .. '\\vspace{' .. padding_v .. 'in}' ..
@@ -1045,6 +1118,7 @@ function Image(img)
                           frame_assembly .. "\\end" .. latex_figure_type ..
                           '\\vspace{' .. padding_v .. 'in}' .. pdf_restore_mar
         end
+        -- print("img_lbl: " .. img_lbl .. "; RESULTS: " .. results)
 
         -- *************************************************************************
         -- DOCX prep
@@ -1293,10 +1367,10 @@ function recordParam(name, value, level, overrides)
     local err = ""
     local alt_doctype = doctype -- Accommodates ability to recognize that pdf docs are processed via latex
     if doctype == "latex" then alt_doctype = "pdf" end
-    i, j = string.find(name, ":[_%a]+$") -- Get param without doc constraint
+    i, j = string.find(name, "%.[_%a]+$") -- Get param without doc constraint (CHANGED : to %.)
     if i ~= nil then -- If constraint indicated
         nam = string.sub(name, i + 1, j) -- Get name without constraint
-        i, j = string.find(name, "[_%a]+:") -- Get doc type constraint
+        i, j = string.find(name, "[_%a]+%.") -- Get doc type constraint (CHANGED : to %.)
         if i ~= nil then -- If doc type prefix indicated
             doctyp = string.sub(name, i, j - 1)
             if verify_entry(doctyp, doctypes) then -- Ensure doctype prefix valid
@@ -1329,66 +1403,6 @@ function recordParam(name, value, level, overrides)
         end
     end
     return err
-end
-
--- **************************************************************************************************
--- Affects latex/pdf only: Intercept headers and add latex to ensure will not be orphaned. 
-function Header(el, s, attr)
-    local sec_type -- section or subsection
-    local r = ""
-    local name = ""
-    local val = ""
-    local default = "4" -- Default value for keep with next
-    local minlines = default
-    local err_msg = "" -- Reset error message
-    local e_msg
-    if #el.attributes ~= 0 then
-        -- Gather attributes and ensure each attribute name is valid
-        for ptr = 1, #el.attributes, 1 do -- Gather parameters from image
-            name = el.attributes[ptr][1]
-            val = el.attributes[ptr][2]
-            if name == "keep_with_next" then
-                if tonumber(val) > 2 then
-                    minlines = val
-                else
-                    err_msg = err_msg ..
-                                  "Parameter 'keep_with_next' must be greater than 2. (Heading '" ..
-                                  stringify(el.content) .. "') "
-                end
-            else
-                err_msg = err_msg .. "Unrecognized parameter (" .. name ..
-                              ") for heading '" .. stringify(el.content) ..
-                              "'. "
-            end
-        end
-    end
-    if el.level < 2 then -- Get header level
-        sec_type = "section"
-    elseif el.level == 2 then
-        sec_type = "subsection"
-    else
-        sec_type = "subsubsection"
-        -- elseif el.level == 5 then
-        --     sec_type = "paragraph"
-        -- else
-        --     sec_type = "subparagraph"
-    end
-
-    if #err_msg > 0 then
-        emsg = "\\textcolor{red}{[ERROR IN HEADING INFORMATION - " .. err_msg ..
-                   "]}\n\n"
-    else
-        emsg = ""
-    end
-    if (FORMAT:match "latex") and el.level > 0 then -- Latex/PDF    -- Must be latex/pdf and cannot be title
-        results = emsg .. "\\needspace{" .. minlines .. "\\baselineskip}{" ..
-                      '\\hypertarget{' .. el.identifier .. '}{%\n\\' .. sec_type ..
-                      '{' .. stringify(el.c) .. '}\\label{' .. el.identifier ..
-                      '}}' .. "}"
-        return pandoc.RawInline('latex', results)
-    else -- if not latex/pdf
-        return nil
-    end
 end
 
 -- **************************************************************************************************
@@ -1865,6 +1879,5 @@ return {
     {Meta = Meta}, -- Must be first
     {Code = Code},
     {CodeBlock = CodeBlock},
-    {Header = Header},
     {Image = Image}
 }
