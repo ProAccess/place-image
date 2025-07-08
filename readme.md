@@ -31,8 +31,8 @@
   - [Issues in latex/pdf documents](#issues-in-latexpdf-documents)
     - [Use this procedure](#use-this-procedure)
     - [Avoiding issues](#avoiding-issues)
-    - [Use the format-specific *‘`pdf:`’* prefix for pdf/latex image
-      parameters](#use-the-format-specific-pdf-prefix-for-pdflatex-image-parameters)
+    - [Use the format-specific *‘`pdf.`’* prefix for pdf/latex image
+      parameters](#use-the-format-specific-pdf.-prefix-for-pdflatex-image-parameters)
 
 # A solution for enhanced image and caption control
 
@@ -155,16 +155,16 @@ document type. For example, the following will set the image width at
 50% of page width for any supported format except pdf and docx images,
 which will be sized separately:
 
-`![My caption](my-image.jpg){position=float-right width=50% pdf:width=40% docx:width=45%}`
+`![My caption](my-image.jpg){position=float-right width=50% pdf.width=40% docx.width=45%}`
 
 Supported document format identifiers include the following:
 
-- html: — For web
-- docx: — For MS Word documents
-- pdf: — For convenient document exchange
-- latex: — For typesetting and pdf conversion
-- epub: — For commonly available e-published format
-- gfm: — For creating Github-flavored markdown `.md` files (limited
+- html. — For web
+- docx. — For MS Word documents
+- pdf. — For convenient document exchange
+- latex. — For typesetting and pdf conversion
+- epub. — For commonly available e-published format
+- gfm. — For creating Github-flavored markdown `.md` files (limited
   support)
 
 <a name="image_specific"></a>
@@ -293,7 +293,7 @@ or
 | cap_label | Allows specifying a numbered custom label that appears before caption | none | Options may include any string. For example, ‘cap_label=“Figure”’ will result in a label like “Figure 4”. <br/>‘cap_label=“Photo”’ will produce a lable like “Photo 1”, etc. Note: You must enclose your label within quotes, e.g., “My Photo”. |
 | cap_label_sep   | Allows specifying a custom separator character(s) between the numbered custom label and caption. |   “: ” | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…” <br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters: <br/>‘cap_label_sep=“\_-\_”’ <br/>It will appear as, for example, <br/>“Photo 2 - My caption…” |
 | close_frame | (PDF/latex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
-| adjust_frame_ht | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below or strange behavior with graphics that follow, even on later pages. Should this occur, you should use this directive and try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., “pdf:width=42%” instead of “width=45%.”) |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf:adjust_frame_ht=15, etc. |
+| adjust_frame_ht | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below or strange behavior with graphics that follow, even on later pages. Should this occur, you should use this directive and try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., “pdf.width=42%” instead of “width=45%.”) |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf.adjust_frame_ht=15, etc. |
 | pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. By default, this is set to *false*, which relaxes restrictions and allows image to be moved to accommodate normal latex page composition. | false | Examples: pdf_anchor_strict=true |
 | md_cap_ht_adj | (Markdown/gfm documents only) — Allows tweaking the height of the vertical caption container, should you find a caption failing to be contained properly. Values may be between -20 and 20. |  | Examples: md_cap_ht_adj=3, md_cap_ht_adj=-4 |
 
@@ -512,17 +512,17 @@ allows latex to move images that are too close to a top or bottom margin
 to another page. It is strongly suggested you do not override this
 parameter.
 
-### Use the format-specific *‘`pdf:`’* prefix for pdf/latex image parameters
+### Use the format-specific *‘`pdf.`’* prefix for pdf/latex image parameters
 
 For pdf and latex documents, you’ll want to make liberal use of the
-document type prefix *‘pdf:’* with your image parameters. This will
+document type prefix *‘pdf.’* with your image parameters. This will
 cause the parameter value to override a default or specified value for a
 pdf/latex image. For example, if you’ve specified a width of 50% for a
 *float-right* image but the pdf version extends below the bottom margin,
 you may be able to resolve the issue by specifying a different image
 width for pdf/latex documents, like this:
 
-`![My caption](my-image.jpg){position=float-right width=50% pdf:width=35% cap_label="My Figure"}`
+`![My caption](my-image.jpg){position=float-right width=50% pdf.width=35% cap_label="My Figure"}`
 
 This should cause the image to appear at 35% width for a pdf or latex
 doc format, while it will appear at 50% width for any other doc format.
@@ -530,7 +530,7 @@ doc format, while it will appear at 50% width for any other doc format.
 Alternatively, you may elect not to float the image in a pdf/latex doc
 with the position parameter like this:
 
-`![My caption](my-image.jpg){position=float-right pdf:position=center width=40% cap_label="My Figure"}`
+`![My caption](my-image.jpg){position=float-right pdf.position=center width=40% cap_label="My Figure"}`
 
 The `prefix` modifier can be a powerful means of adjusting images that
 appear problematic in pdf (or other) formats.
