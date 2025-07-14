@@ -58,7 +58,7 @@ The place-image filter allows you to specify these parameters:
   relative to image width, e.g., `cap_width=95%`
 - cap_space – Space between caption and image, e.g., `cap_space=10px`
 - cap_position – Vertical positon relative to image: `above` or `below`.
-  Default is `above`. For example, `cap_position=above`
+  Default is `above`. `cap_position=above`
 - cap_h_position – horizontal position of caption block relative to
   image (`left`, `center`, `right`). For example, `cap_h_position=right`
   Default is `center`.
@@ -252,7 +252,7 @@ or
 
 ### For images and captions
 
-| Parameter | Notes/Options | Default | Examples |
+| Parameter | Notes | Default | Examples |
 |:---|:---|:---|:---|
 | width | Image width | 50% | width=35%, width=200px, width=3cm, width=2.5in |
 | position | Horizontal position relative to page | center | Options: left, center, right, float-left, float-right; floats are text-wrapped. <br/>Examples: position=center, position=float-right |
@@ -267,17 +267,17 @@ or
 | cap_text_font | If specified, font must be a registered system font; use sparingly |  | Options may include any system font. <br/>Examples: cap_text_font=Helvetica, cap_text_font=Arial, cap_text_font=Times, etc. |
 | cap_text_style | Caption text style | plain | plain, italic, bold, oblique, bold-oblique |
 | cap_label | Allows specifying a numbered custom label that appears before caption | none | Options may include any string. For example, ‘cap_label=“Figure”’ will result in a label like “Figure 4”. <br/>‘cap_label=“Photo”’ will produce a lable like “Photo 1”, etc. Note: You must enclose your label within quotes, e.g., “My Photo”. |
-| cap_label_sep   | Allows specifying a custom separator character(s) between the numbered custom label and caption. |   “:\_” | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…” <br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. In order for the Pandoc converter to interpret the space indicator properly, you may have to precede it with an “\\” escape character. For example, the following shows a custom separator: a hyphen surrounded by space characters: <br/>cap_label_sep=“\\-\\”’ <br/>It will appear as, for example, <br/>“Photo 2 - My caption…” |
-| close_frame | (PDF/LaTex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
-| adjust_frame_ht | (PDF/LaTex documents only) — This allows tweaking the wrap height for a wrapped image in LaTex/pdf formats. Sometimes LaTex misjudges wrap height and text may flow into the image from below or there may be too much empty space below or strange behavior with graphics that follow, even on later pages. Should this occur, you should use this directive and try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the PDF/LaTex image width in such cases, e.g., “pdf.width=42%” instead of “width=45%.”) |  | This parameter affects *only* LaTex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf.adjust_frame_ht=15, etc. |
-| pdf_anchor_strict | (PDF/LaTex documents only) — Indicates if pdf or LaTex image may be moved automatically if too close to a top/bottom margin. By default, this is set to *false*, which relaxes restrictions and allows image to be moved to accommodate normal LaTex page composition. | false | Examples: pdf_anchor_strict=true |
+| cap_label_sep   | Allows specifying a custom separator character(s) between the numbered custom label and caption. |   “: ” | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…” <br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters: <br/>‘cap_label_sep=“\_-\_”’ <br/>It will appear as, for example, <br/>“Photo 2 - My caption…” |
+| close_frame | (PDF/latex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
+| adjust_frame_ht | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below or strange behavior with graphics that follow, even on later pages. Should this occur, you should use this directive and try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., “pdf:width=42%” instead of “width=45%.”) |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf:adjust_frame_ht=15, etc. |
+| pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. By default, this is set to *false*, which relaxes restrictions and allows image to be moved to accommodate normal latex page composition. | false | Examples: pdf_anchor_strict=true |
 | md_cap_ht_adj | (Markdown/gfm documents only) — Allows tweaking the height of the vertical caption container, should you find a caption failing to be contained properly. Values may be between -20 and 20. |  | Examples: md_cap_ht_adj=3, md_cap_ht_adj=-4 |
 
 ### For headings
 
 | Parameter | Notes | Default | Examples |
 |:---|:---|:---|:---|
-| keep_with_next | Prevents headings from being orphaned when near page bottom. If you find a heading alone, it’s usually because LaTex encountered an image(s) that complicated optimum page composition. In such case, use *keep_with_next* and specify a number of lines exceeding the equivalent number of lines between the heading and page bottom. | 4 | If near page bottom, e.g., `keep_with_next=5`. If farther up, `keep_with_next=30` |
+| keep_with_next | Prevents headings from being orphaned when near page bottom. If you find a heading alone, it’s usually because latex encountered an image(s) that complicated optimum page composition. In such case, use *keep_with_next* and specify a number of lines exceeding the equivalent number of lines between the heading and page bottom. | 4 | If near page bottom, e.g., `keep_with_next=5`. If farther up, `keep_with_next=30` |
 
 ## Supports header YAML *papersize* and *geometry* parameters
 
