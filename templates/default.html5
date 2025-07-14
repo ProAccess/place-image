@@ -1,7 +1,38 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="$lang$" xml:lang="$lang$" $if(dir)$ dir="$dir$" $endif$>
-
 <head>
+  $if(toc_float)$
+  <!-- First load jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <!-- Then load UI and plugins -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-tocify/1.9.0/javascripts/jquery.tocify.min.js"></script>
+  <!-- Finally add the initialization code -->
+  <script>
+  $$(document).ready(function() {
+    // Initialize the floating TOC
+    $$('.tocify-wrapper').tocify({
+      selectors: 'h1, h2, h3, h4, h5, h6',
+      theme: 'bootstrap',
+      context: '.main-content',
+      hashGenerator: 'pretty',
+      extendPage: false
+    });
+  });
+  </script>
+  <style>
+    /* CSS for floating TOC */
+    .tocify {
+      width: 20%;
+      max-height: 90%;
+      overflow: auto;
+      position: fixed;
+      top: 50px;
+      left: 10px;
+    }
+  </style>
+  $endif$
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
@@ -34,7 +65,6 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
 </head>
-
 <body>
   $for(include-before)$
   $include-before$
@@ -42,22 +72,21 @@
   $if(title)$
   <header id="title-block-header">
     <h1 class="title">$title$</h1>
-    $if(subtitle)$
-    <p class="subtitle">$subtitle$</p>
-    $endif$
-    $for(author)$
-    <p class="author">$author$</p>
-    $endfor$
-    $if(date)$
-    <p class="date">$date$</p>
-    $endif$
-    $if(abstract)$
-    <div class="abstract">
-      <div class="abstract-title">$abstract-title$</div>
-      $abstract$
-    </div>
-    $endif$
-  </header>
+  </header> $for(author)$
+  $if(subtitle)$
+  <p class="subtitle">$subtitle$</p>
+  $endif$
+  <p class="author">$author$</p>
+  $endfor$
+  $if(date)$
+  <p class="date">$date$</p>
+  $endif$
+  $if(abstract)$
+  <div class="abstract">
+    <div class="abstract-title">$abstract-title$</div>
+    $abstract$
+  </div>
+  $endif$
   $endif$
   $if(toc)$
   <nav id="$idprefix$TOC" role="doc-toc">

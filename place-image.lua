@@ -1327,13 +1327,22 @@ function Image(img)
                 results = {
                     pandoc.RawInline('openxml',
                                      results_pre .. results_cap .. results_pre),
-                    img
+                    img, pandoc.RawInline('openxml', '</w:p><w:p>')
                 }
 
             elseif (cap_position == "below") then
                 if #cap_text > 0 then -- If caption
-                    results_cap = docx_cap_par_style .. docx_cap_pre ..
-                                      '</w:pPr><w:r>' .. er_msg .. '</w:r><w:r>' ..
+                    -- Create a spacer run. This run contains ONLY a sized, non-breaking space.
+                    -- Its height creates the desired vertical gap.
+                    local spacer_run = '<w:r><w:rPr><w:sz w:val="' .. (cap_space * points_per_in * 2) .. 
+                                         '"/></w:rPr><w:t>' .. "\u{00A0}" .. '</w:t></w:r>'
+
+                    -- Create a line break run. This moves the cursor to the next line AFTER the spacer.
+                    local break_run = '<w:r><w:br/></w:r>'
+
+                    -- This string is now a set of runs, NOT a full paragraph
+                    results_cap = spacer_run .. break_run .. -- Use the spacer, then the break
+                                      '<w:r>' .. -- Start a new run for the caption text
                                       cap_text_docx_style ..
                                       cap_label_docx_style .. '<w:t>' .. cap_lbl ..
                                       label_sep1 .. '</w:t></w:r><w:r>' ..
@@ -1345,12 +1354,12 @@ function Image(img)
                 end
                 results = {
                     pandoc.RawInline('openxml', results_pre), img,
-                    pandoc.RawInline('openxml', '</w:p><w:p>' .. results_pre ..
-                                         results_cap)
+                    -- Do NOT close the paragraph. Add caption runs and then close it.
+                    pandoc.RawInline('openxml', results_cap .. '</w:p><w:p>')
                 }
-
             end
         end
+
         return results
     end
 end
