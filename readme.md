@@ -1,10 +1,11 @@
-# A solution for enhanced image and caption control
+# Enhanced image and caption control for Markdown
 
 The *image-placement.lua* Pandoc filter is intended to address commonly
 encountered shortcomings when displaying images and captions in
 documents created by Pandoc from markdown documents. Now you can specify
 a variety of image and caption parameters directly within markdown
-images statements. Here are two brief examples:
+images statements. Here are two brief examples. Cut and paste them into
+your document to try them out, substituting your own images:
 
 <p align="left"><img src="./images-md/1-px.png" width="5.0%" height="0.0px" align="left"><img src="./images-md/1-px.png" width="5.0%" height="0.0px" align="right"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '></span></span></p><p align="center"><img src="./images-md/examples.png" width="100.0%"></p>
 
@@ -44,11 +45,11 @@ individual image parameters are set.
 
 # Parameters you can control
 
-The place-image filter allows you to specify these parameters:
+The place-image filter allows you to specify any of these parameters:
 
 ## For images and captions
 
-- width – Image width
+- width – Image width, e.g., `width=40%`
 - position – Horizontal position on page (`left`, `center`, `right`,
   `float-left`, `float-right`). For example, `position=float-right`
   Floats are text-wrapped.)
@@ -99,8 +100,8 @@ results. The parameters below can be used to *fix* most of these.
 ## For headings
 
 - keep_with_next – Used with *Headings* to keep them from being
-  ‘orphaned’ at bottom of page. Note, its effect may be compromised if
-  too close to an image, e.g., `keep_with_next=true`.
+  ‘orphaned’ at bottom of page, e.g., `keep_with_next=true`. Note, its
+  effect may be compromised if the heading is too close to an image.
 
 ## Control globally or just individually
 
@@ -269,7 +270,7 @@ or
 | cap_label | Allows specifying a numbered custom label that appears before caption | none | Options may include any string. For example, ‘cap_label=“Figure”’ will result in a label like “Figure 4”. <br/>‘cap_label=“Photo”’ will produce a lable like “Photo 1”, etc. Note: You must enclose your label within quotes, e.g., “My Photo”. |
 | cap_label_sep   | Allows specifying a custom separator character(s) between the numbered custom label and caption. |   “: ” | By default, label and caption are separated by a colon followed by a space character, like this: <br/>“Figure 4: My caption…” <br/>Ensure you enclose your custom separater within quotes if it will contain any space character and use the underscore character to indicate the space. For example, the following shows a custom separator, a hyphen surrounded by space characters: <br/>‘cap_label_sep=“\_-\_”’ <br/>It will appear as, for example, <br/>“Photo 2 - My caption…” |
 | close_frame | (PDF/latex documents only) — Sometimes text is improperly wrapped around a floated image, resulting in a failure to restore the original margin immediately after the image. Use this parameter *only* where such problem exists as using indiscriminately may cause unexpected results elsewhere in the document. | false | close_frame=true |
-| adjust_frame_ht | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below or strange behavior with graphics that follow, even on later pages. Should this occur, you should use this directive and try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., “pdf:width=42%” instead of “width=45%.”) |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf:adjust_frame_ht=15, etc. |
+| adjust_frame_ht | (PDF/latex documents only) — This allows tweaking the wrap height for a wrapped image in latex/pdf formats. Sometimes latex misjudges wrap height and text may flow into the image from below or there may be too much empty space below or strange behavior with graphics that follow, even on later pages. Should this occur, you should use this directive and try specifying different equialent line heights for that image, e.g., “10”, “15”, etc. (You also may wish to tweak the pdf/latex image width in such cases, e.g., “pdf.width=42%” instead of “width=45%.”) |  | This parameter affects *only* latex/pdf images. Examples: adjust_frame_ht=10, adjust_frame_ht=12, pdf.adjust_frame_ht=15, etc. |
 | pdf_anchor_strict | (PDF/latex documents only) — Indicates if pdf or latex image may be moved automatically if too close to a top/bottom margin. By default, this is set to *false*, which relaxes restrictions and allows image to be moved to accommodate normal latex page composition. | false | Examples: pdf_anchor_strict=true |
 | md_cap_ht_adj | (Markdown/gfm documents only) — Allows tweaking the height of the vertical caption container, should you find a caption failing to be contained properly. Values may be between -20 and 20. |  | Examples: md_cap_ht_adj=3, md_cap_ht_adj=-4 |
 
@@ -354,11 +355,8 @@ output:
 
 # Considerations for floating images in markdown/gfm documents
 
-<figure>
-
-<figcaption>Now you can place and caption your images and illustrations
-wherever and however you like!</figcaption>
-</figure>
+<figure><img src="./images-md/happy-face-doc.png" align="right" width="40.0%"><img src="./images-md/1-px.png" width="14.4" height="86.4px" align="right"><figcaption style="margin-left:10%"><span style='font-family:; font-style:plain; font-size:medium; '><span style='font-style:normal; font-weight:normal; '>Figure 2:</span> Now you can place and caption your images and illustrations wherever and however you like!</span><br><br></figcaption></figure>
+<!-- simulated-blank-line -->
 
 Natively (without the place-image filter), Pandoc does not create
 floated images for markdown documents and some *flavors* of markdown
