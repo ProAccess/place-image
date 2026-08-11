@@ -985,7 +985,7 @@ function Image(img)
                 lnbr_below = "\\linebreak"
             else -- caption is below
                 cap_pdg_above = cap_space
-                -- cap_pdg_below = padding_v
+                cap_pdg_below = padding_v
                 lnbr_above = "\\linebreak"
                 lnbr_below = ""
             end
