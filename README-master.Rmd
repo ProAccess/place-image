@@ -1,5 +1,5 @@
 ---
-title:  Place-Image Pandoc Lua Filter Adds Image and Caption Control
+title:  Place-Image Pandoc Lua Filter Adds Image and Caption Control (2026 Update)
 subtitle:  | 
   | Optional parameters provide extended control of markdown images and captions
 author: "George Markle"
@@ -7,7 +7,7 @@ titlepage: "yes"
 titlepage-background: "images-md/title-page-background.pdf"
 titlepage-rule-color: "1b75bb"
 titlepage-rule-height: "3"
-date: "July 14, 2025"
+date: "August 12, 2026"
 book: "no"
 papersize: "Letter"
 geometry: "left=1in, right=1in, top=.75in, bottom=.75in, footskip=1cm"
@@ -50,6 +50,55 @@ The *image-placement.lua* Pandoc filter is intended to address commonly encounte
 
 ![](./images-md/examples.png){width=100%}
 
+# What's new in the 2026 filter
+
+The 2026 version preserves the original image/caption placement capabilities and adds several practical enhancements for SVG workflows, theming, and metadata handling.
+
+If you've already been using this filter, think of this as a quality-of-life upgrade rather than a reinvention. Existing image/caption usage should still feel familiar, with a few useful new knobs to turn.
+
+## New highlights
+
+- SVG-specific styling directives: `fill`, `stroke_color`, and `stroke_width`.
+- New `height` parameter for images, with automatic height derivation from width when omitted.
+- Accent theming via YAML (`accent_color` or `accent_palette`) for consistent SVG color tokens.
+- More robust `imageplacement` YAML parsing, including key/value object format.
+- Inline icon mode via image class `.inline-icon`.
+- Improved debug control via metadata (`debug`, `verbose`), environment (`DEBUG`, `VERBOSE`), and Pandoc verbosity.
+
+The net effect: less repetitive hand-tuning, easier color consistency, and fewer "why is this one image being weird?" episodes.
+
+## Quick examples for the new features
+
+The snippets below are intended to be copy/paste-friendly so you can test each feature quickly in your own document.
+
+```markdown
+![County map](./images-md/county-map.svg){width=48% fill=#1e3a5f}
+```
+
+```markdown
+![Boundary](./images-md/boundary.svg){width=52% fill=accent-light stroke_color=accent-dark stroke_width=1.2}
+```
+
+```markdown
+Board vote ![](./images-md/check.svg){.inline-icon width=0.18in fill=accent-dark} passed unanimously.
+```
+
+```yaml
+accent_color: "#1e3a5f"
+```
+
+or
+
+```yaml
+accent_palette:
+  accent: "#1e3a5f"
+  accent-medium: "#2b527f"
+  accent-light: "#4f7399"
+  accent-lighter: "#7390b0"
+  accent-dark: "#17304e"
+  accent-darker: "#12263f"
+```
+
 # Document formats supported
 
 It is assumed you already have installed Pandoc. If not, information is provided [here](https://pandoc.org/installing.html).
@@ -74,8 +123,12 @@ The place-image filter allows you to specify any of these parameters:
 ## For images and captions
 
 - width -- Image width, e.g., `width=40%`
+- height -- Image height. If omitted, the filter may auto-derive it from width and intrinsic ratio.
 - position -- Horizontal position on page (`left`, `center`, `right`, `float-left`, `float-right`). For example, `position=float-right` Floats are text-wrapped.)
 - h_padding, v_padding -- Padding between image, caption and surrounding text, e.g., `v_padding=15px`
+- fill -- (SVG only) Recolors SVG fill. Can be hex (e.g., `fill=#1e3a5f`) or accent token (e.g., `fill=accent-dark`).
+- stroke_color -- (SVG only) Recolors SVG stroke. Can be hex or accent token.
+- stroke_width -- (SVG only) Overrides SVG stroke width.
 - cap_width -- Width of caption text. If expressed as percent, will be relative to image width, e.g., `cap_width=95%`
 - cap_space -- Space between caption and image, e.g., `cap_space=10px`
 - cap_position -- Vertical positon relative to image: `above` or `below`. Default is `above`. `cap_position=above`
@@ -114,6 +167,19 @@ Each markdown image statement can include desired parameters, which will overrid
 You can affect all images within a global "[imageplacement](#global-params)" statement in the YAML Meta section at the top of the markdown document, e.g.,
 
 `imageplacement: width=45%, cap_label="My Figure", cap_position=above`
+
+In the 2026 filter, you may also use YAML object form, which is often easier to maintain:
+
+```yaml
+imageplacement:
+  width: 45%
+  position: float-right
+  cap_label: Figure
+  cap_label_sep: ":_"
+  pdf.width: 38%
+```
+
+This object form is usually easier to read and edit than long comma-separated strings, especially once you add multiple format-specific overrides.
 
 ### You can even specify different image params for different document types
 
@@ -178,7 +244,7 @@ You can cause the label to be bold face by adding the "cap_label_style" paramete
 
 This would produce a caption like this: "**My Figure 3:** This is my caption..."
 
-> Note 1 — unlike with parameters listed with images, image parameters in the YAML header must be separated by commas, due to the way the Lua language scans the YAML header for parameters; failing to include commas may cause Pandoc to pee on itself, causing a "scan" error and high blood pressure.
+> Note 1 — If you use legacy one-line `imageplacement` string syntax, parameters should be separated by commas. In the 2026 filter, YAML object form is also supported and is generally the safer, easier-to-maintain approach.
 
 > Note 2 — Note the "cap_label_sep" parameter of ":\_". The underscore character following the colon indicates a space "&nbsp;" character. This is because an actual space character in a YAML parameter string also can cause a "scan" error. Therefore, use the "_" underscore character to indicate a space.
 
@@ -210,9 +276,13 @@ or
 | Parameter  | Notes  | Default  | Examples  |
 | :-------- | :------------------- | :---- | :-------------- |
 | width  | Image width  | 50%  | width=35%, width=200px, width=3cm, width=2.5in  |
+| height  | Image height. If omitted, filter may derive it from intrinsic aspect ratio when width is known.  | auto  | height=1.4in, height=120px  |
 | position  | Horizontal position relative to page  | center  | Options: left, center, right, float-left, float-right; floats are text-wrapped. <br/>Examples: position=center, position=float-right  |
 | h_padding  | Horizontal separation between image and surrounding text  | 0.15in  | h_padding=0.15in, h_padding=4mm, h_padding=10px, etc.  |
 | v_padding  | Vertical separation between image and surrounding text  | 0.15in  | v_padding=0.12in, v_padding=.3cm, v_padding=9px, etc.  |
+| fill  | (SVG only) Recolors SVG fill. Accepts hex values or accent tokens.  | none  | fill=#1e3a5f, fill=accent-dark, fill=accent-light  |
+| stroke_color  | (SVG only) Recolors SVG stroke. Accepts hex values or accent tokens.  | none  | stroke_color=#17304e, stroke_color=accent-darker  |
+| stroke_width  | (SVG only) Overrides SVG stroke width.  | none  | stroke_width=1, stroke_width=1.2, stroke_width=2px  |
 | cap_width  | Width of caption. If percent, relative to image width  | 90%  | cap_width=100%, cap_width=250px, cap_width=1in, etc.  |
 | cap_space  | Space between caption and image  | 0.15in  | Example: cap_space=0.12in  |
 | cap_position  | Caption vertical position relative to image  | above  | Options: above, below <br/>Example: cap_position=below  |
